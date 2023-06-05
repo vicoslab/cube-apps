@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cfg>
+    <demoId>PlD</demoId>
+    <dockerId>ploscice-demo:ubuntu18.04-cuda11.2.0-cudnn8</dockerId>
+    <highlight>Detekcija napak</highlight>
+    <video>demo.mp4</video>
+</cfg>
