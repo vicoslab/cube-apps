@@ -32,8 +32,8 @@ RUN pip3 install future
 
 COPY scripts ${MODEL_DIR}
 
-RUN wget https://box.vicos.si/vicos-cube/PlosciceDemo/docker/scripts/6_FINAL.pth ${MODEL_DIR}/model.pth
-RUN wget https://box.vicos.si/vicos-cube/PlosciceDemo/docker/scripts/6_seg_FINAL.pth ${MODEL_DIR}/model_seg.pth
+RUN wget https://box.vicos.si/vicos-cube/ploscice/docker/models/6_FINAL.pth ${MODEL_DIR}/model.pth
+RUN wget https://box.vicos.si/vicos-cube/ploscice/docker/models/6_seg_FINAL.pth ${MODEL_DIR}/model_seg.pth
 
 RUN chmod +x ${MODEL_DIR}/run_main.py
 

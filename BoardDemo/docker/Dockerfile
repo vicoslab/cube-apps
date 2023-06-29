@@ -31,11 +31,10 @@ RUN python3 -m pip install torch==1.7.1+cu110 torchvision==0.8.2+cu110 torchaudi
 RUN python3 -m pip install efficientnet_pytorch
 RUN pip3 install future
 
-COPY scripts/echolib_wrapper.py ${MODEL_DIR}
-COPY scripts/run_main.py ${MODEL_DIR}
+COPY scripts ${MODEL_DIR}
 
 ARG MODEL_NAME="m1.pth"
-RUN wget https://box.vicos.si/vicos-cube/BoardDemo/docker/${MODEL_NAME} ${MODEL_DIR}/model.pth
+RUN wget https://box.vicos.si/vicos-cube/board/docker/models/${MODEL_NAME} ${MODEL_DIR}/model.pth
 
 RUN chmod +x ${MODEL_DIR}/run_main.py
 
