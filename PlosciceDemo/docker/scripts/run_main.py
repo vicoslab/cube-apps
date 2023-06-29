@@ -22,13 +22,6 @@ RESIZE = (480, 480)
 imagenet_mean = np.array([0.485, 0.456, 0.406])
 imagenet_std = np.array([0.229, 0.224, 0.225])
 
-MODEL_FILE = "6_FINAL.pth"
-MODEL_SEG_FILE = "6_seg_FINAL.pth"
-
-#MODEL_FILE = "1_BEST.pth"
-#MODEL_SEG_FILE = "1_seg_BEST.pth"
-
-
 class ReconstructiveSubNetwork(nn.Module):
     def __init__(self, in_channels=3, out_channels=3, base_width=128):
         super(ReconstructiveSubNetwork, self).__init__()
@@ -360,15 +353,15 @@ CROP_PIXEL = -20
 
 class PModel:
 
-    def __init__(self, modelFile, blockNumber=4, sizeRange=None):
+    def __init__(self, modelFile, modelSegFile blockNumber=4, sizeRange=None):
         model = ReconstructiveSubNetwork(in_channels=3, out_channels=3)
         model.to(DEVICE)
 
         model_seg = DiscriminativeSubNetwork(in_channels=6, out_channels=2)
         model_seg.to(DEVICE)
 
-        model.load_state_dict(torch.load(MODEL_FILE, map_location=DEVICE))
-        model_seg.load_state_dict(torch.load(MODEL_SEG_FILE, map_location=DEVICE))
+        model.load_state_dict(torch.load(modelFile, map_location=DEVICE))
+        model_seg.load_state_dict(torch.load(modelSegFile, map_location=DEVICE))
 
         model.eval()
         model_seg.eval()
@@ -439,7 +432,7 @@ def main(args):
     else:
         processer = lambda d: FolderProcessing(d, args.image_folder, args.image_ext, args.out_folder)
 
-    p = processer(PModel(modelFile=args.model))
+    p = processer(PModel(modelFile=args.model, modelSegFile=args.model_seg))
 
     try:
         p.run()
@@ -454,9 +447,17 @@ def parseArgs():
         '--model',
         dest='model',
         help='model model file',
-        default="/opt/poco_model.hdf5",
+        default="model.pth",
         type=str
     )
+    parser.add_argument(
+        '--model_seg',
+        dest='model_seg',
+        help='model segmentation file',
+        default="model_seg.pth",
+        type=str
+    )
+
     parser.add_argument(
         '--image-ext',
         dest='image_ext',
