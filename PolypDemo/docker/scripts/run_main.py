@@ -8,7 +8,6 @@ from keras import backend as K
 import numpy as np
 import cv2
 
-import sys
 import argparse
 
 from utils import rotate_image
@@ -349,7 +348,7 @@ def parseArgs():
         '--model',
         dest='model',
         help='model model file',
-        default="/opt/poco_model.hdf5",
+        default="/opt/model.hdf5",
         type=str
     )
     parser.add_argument(
