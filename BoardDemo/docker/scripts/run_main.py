@@ -14,9 +14,7 @@ from PIL import Image
 from efficientnet_pytorch import EfficientNet
 
 DEVICE = "cuda:0"
-MODEL_PATH = "m1.pth"
 RESIZE = (1512, 536)
-
 
 def rotate_image(mat, angle):
     """
@@ -103,7 +101,7 @@ class PModel:
 
     def __init__(self, modelFile, blockNumber=4, sizeRange=None):
         self.model = EfficientNet.from_name('efficientnet-b4', num_classes=10).to(DEVICE)
-        self.model.load_state_dict(torch.load(MODEL_PATH, map_location=DEVICE))
+        self.model.load_state_dict(torch.load(modelFile, map_location=DEVICE))
         self.model.eval()
         self.model.to(DEVICE)
 

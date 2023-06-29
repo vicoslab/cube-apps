@@ -32,8 +32,9 @@ RUN python3 -m pip install efficientnet_pytorch
 RUN pip3 install future
 
 COPY scripts ${MODEL_DIR}
+RUN wget https://box.vicos.si/vicos-cube/BoardDemo/docker/m1.pth ${MODEL_DIR}/.
 
 RUN chmod +x ${MODEL_DIR}/run_main.py
 
 # define entry-point and default arguments
-ENTRYPOINT ["/opt/run_main.py"]
+ENTRYPOINT ["/opt/run_main.py", "--model", "/opt/m1.pth"]
