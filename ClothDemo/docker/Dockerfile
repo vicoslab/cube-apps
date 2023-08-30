@@ -1,7 +1,7 @@
 ARG UBUNTU_VERSION=20.04
 ARG CUDA_VERSION=11.7.0-cudnn8
 
-FROM echolib:${UBUNTU_VERSION} AS echolib-base
+FROM vicoslab/echolib:${UBUNTU_VERSION} AS echolib-base
 FROM nvidia/cuda:${CUDA_VERSION}-runtime-ubuntu${UBUNTU_VERSION}
 
 ENV DEBIAN_FRONTEND noninteractive

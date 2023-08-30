@@ -1,7 +1,7 @@
 ARG UBUNTU_VERSION=18.04
 ARG CUDA_VERSION=11.2.0-cudnn8
 
-FROM echolib:${UBUNTU_VERSION} AS echolib-base
+FROM vicoslab/echolib:${UBUNTU_VERSION} AS echolib-base
 FROM nvidia/cuda:${CUDA_VERSION}-runtime-ubuntu${UBUNTU_VERSION}
 
 LABEL maintainer ""

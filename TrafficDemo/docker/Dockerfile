@@ -1,7 +1,7 @@
 ARG UBUNTU_VERSION=16.04
 ARG DETECTRON_IMAGE_RUNTIME
 
-FROM echolib:${UBUNTU_VERSION} AS echolib-base
+FROM vicoslab/echolib:${UBUNTU_VERSION} AS echolib-base
 FROM ubuntu:${UBUNTU_VERSION} AS model-dl
 
 RUN apt-get update && apt-get install -y unzip
