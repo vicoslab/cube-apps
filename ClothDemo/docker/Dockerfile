@@ -25,7 +25,7 @@ RUN cd cedirnet-dev
 
 # install models 
 ARG MODEL_VERSION="no_depth_large"
-RUN echo wget https://box.vicos.si/vicos-cube/cloth/docker/${MODEL_VERSION}.pth ${MODEL_DIR}/model.pth
+RUN wget https://box.vicos.si/vicos-cube/cloth/docker/${MODEL_VERSION}.pth ${MODEL_DIR}/model.pth
 
 # install inference code
 COPY scripts/*.py ${MODEL_DIR}
