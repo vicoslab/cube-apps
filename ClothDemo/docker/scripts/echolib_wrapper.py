@@ -6,9 +6,23 @@ from echolib.camera import Frame, FramePublisher, FrameSubscriber
 
 from threading import Thread
 
+class Command:
+    
+    DISABLE = 0
+    ENABLE = 1
+    
+    CAMERA_STREAM_DEFAULT = 10
+    CAMERA_STREAM_KINECT_AZURE = 11
+    CAMERA_STREAM_KINECT_V2 = 12
 
 class EcholibWrapper:
     
+    CAMERA_STREAMS = {
+        Command.CAMERA_STREAM_DEFAULT: dict(rgb="camera_stream_0"),
+        Command.CAMERA_STREAM_KINECT_AZURE: dict(rgb="azure_kinect_rgb", depth="azure_kinect_depth"),
+        Command.CAMERA_STREAM_KINECT_V2: dict(rgb="kinect_rgb", depth="kinect_depth")
+    }
+
     def __init__(self, detection_method):
 
         self.loop   = echolib.IOLoop()
@@ -20,7 +34,9 @@ class EcholibWrapper:
         self.docker_ready      = echolib.Publisher(self.client, "containerReady", "int")
         self.docker_command_in = echolib.Subscriber(self.client, "docker_demo_command_input", "int", self._docker_command_callback)
         
-        self.camera_stream    = FrameSubscriber(self.client, "camera_stream_0", self._camera_stream_callback)
+        self.camera_stream    = FrameSubscriber(self.client, self.CAMERA_STREAMS[Command.CAMERA_STREAM_DEFAULT]['rgb'], self._camera_stream_callback)
+        self.camera_stream_depth    = None
+
         self.docker_frame_out = FramePublisher(self.client, "docker_demo_output")
 
         self.detection_method = detection_method
@@ -34,12 +50,28 @@ class EcholibWrapper:
         self.closing = False
 
         self.n_frames = 0
+        self.depth_n_frames = 0
 
     def _docker_command_callback(self, message):
+        print("parsing docker command callback")
+        
+        msg = echolib.MessageReader(message).readInt()
+                
+        if msg in self.CAMERA_STREAMS:
+            stream_properties = self.CAMERA_STREAMS[msg]
+            print("Switch streaming to {}".format(stream_properties['rgb']))
+            
+            self.camera_stream = FrameSubscriber(self.client, stream_properties['rgb'], self._camera_stream_callback)
 
-        self.enabled = echolib.MessageReader(message).readInt() != 0
+            if 'depth' in stream_properties:
+                self.camera_stream_depth = FrameSubscriber(self.client, stream_properties['depth'], self._depth_stream_callback)
+            else:
+                self.camera_stream_depth = None
 
-        print("Docker demo: got command {}".format(self.enabled))    
+        elif msg in [Command.ENABLE,Command.DISABLE]:
+            self.enabled = msg != 0
+        
+        print("Docker demo: got command {}".format(msg))    
 
     def _camera_stream_callback(self, message):
 
@@ -50,19 +82,30 @@ class EcholibWrapper:
 
         print("Docker demo: reading camera stream {}".format(self.n_frames))
 
+    def _depth_stream_callback(self, message):
+
+        self.depth_frame_in    = message.image
+        self.depth_frame_in_new = True
+
+        self.depth_n_frames += 1
+
+        print("Docker demo: reading depth stream {}".format(self.depth_n_frames))
+
+
     def process(self):
         
         while not self.closing:
 
             frame = None
 
-            if self.enabled and self.frame_in_new:
+            if self.frame_in_new:
 
                 frame = self.frame_in
                 self.frame_in_new = False
             
-                frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                frame = self.detection_method.predict(frame)
+                if self.enabled:
+                    frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
+                    frame = self.detection_method.predict(frame)
 
             if frame is not None:
 
