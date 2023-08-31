@@ -1,5 +1,5 @@
 ARG UBUNTU_VERSION=20.04
-ARG CUDA_VERSION=11.7.0-cudnn8
+ARG CUDA_VERSION=11.7.1-cudnn8
 
 FROM vicoslab/echolib:${UBUNTU_VERSION} AS echolib-base
 FROM nvidia/cuda:${CUDA_VERSION}-runtime-ubuntu${UBUNTU_VERSION}
@@ -25,14 +25,15 @@ RUN cd cedirnet-dev
 
 # install models 
 ARG MODEL_VERSION="no_depth_large"
-RUN wget https://box.vicos.si/vicos-cube/cloth/docker/${MODEL_VERSION}.pth ${MODEL_DIR}/model.pth
+COPY ${MODEL_VERSION}.pth /opt/model.pth
+COPY center_model.pth /opt/center_model.pth
 
 # install inference code
 COPY scripts/*.py ${MODEL_DIR}
 COPY scripts/config/${MODEL_VERSION}.py ${MODEL_DIR}/model_args.py
 
+
 # add cedirnet code to python path
 ENV PYTHONPATH "${PYTHONPATH}:${MODEL_DIR}/cedirnet-dev/src"
 
-ENTRYPOINT ["python3", "${MODEL_DIR}/run_main.py" , "--model", "${MODEL_DIR}/model.pth"]
-
+ENTRYPOINT ["python3", "/opt/run_main.py" , "--model", "/opt/model.pth", "--center_model", "/opt/center_model.pth"]
