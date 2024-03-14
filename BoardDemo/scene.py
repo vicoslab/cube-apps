@@ -55,7 +55,7 @@ def get_scene(parameters):
         if frame is not None:
             state.board_detection_time = time.time()
 
-        if state.board_detection_time is None or (time.time() - state.board_detection_time > 5.0):
+        if state.board_detection_time is None or (time.time() - state.board_detection_time > 15.0):
 
             state.board_detection_time = None
             

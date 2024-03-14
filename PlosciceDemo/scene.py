@@ -57,7 +57,7 @@ def get_scene(parameters):
 
         v0 = state.tile_detection_time is None
 
-        if v0 or (time.time() - state.tile_detection_time > 5.0):
+        if v0 or (time.time() - state.tile_detection_time > 15.0):
             state.tile_detection_time = None
             return camera_image
 
