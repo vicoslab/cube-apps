@@ -59,6 +59,7 @@ def crop_part(image, final_crop):
             break
         if threshold in tried:
             print(f"Cant find suitable threshold!")
+            return None, None, 0, 0
 
     ccs = cv2.connectedComponentsWithStats(dilated)
 

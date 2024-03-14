@@ -16,6 +16,8 @@ from PIL import Image
 
 from utils import crop_part
 
+print("Ploscice startup")
+
 DEVICE = "cuda:0"
 RESIZE = (480, 480)
 
@@ -353,7 +355,7 @@ CROP_PIXEL = -20
 
 class PModel:
 
-    def __init__(self, modelFile, modelSegFile blockNumber=4, sizeRange=None):
+    def __init__(self, modelFile, modelSegFile, blockNumber=4, sizeRange=None):
         model = ReconstructiveSubNetwork(in_channels=3, out_channels=3)
         model.to(DEVICE)
 
@@ -370,7 +372,24 @@ class PModel:
         self.model_seg = model_seg
 
     def predict(self, image):
-        final_cropped, contours, tx, ty = crop_part(image, CROP_PIXEL)
+        try:
+            final_cropped, contours, tx, ty = crop_part(image, CROP_PIXEL)
+        except Exception as e:
+            print(e)
+            cv2.putText(image, f"X", (500, 500), cv2.FONT_HERSHEY_TRIPLEX, 5, [0, 0, 255], 5)
+            return image
+
+        if final_cropped is None:
+            print("final_cropped is None")
+            cv2.putText(image, f"X", (500, 500), cv2.FONT_HERSHEY_TRIPLEX, 5, [0, 0, 255], 5)
+            return image
+        
+        if final_cropped.shape[0]*final_cropped.shape[1] < FILTER_SIZE*FILTER_SIZE:
+            cv2.putText(image, f"X", (500, 500), cv2.FONT_HERSHEY_TRIPLEX, 5, [0, 0, 255], 5)
+            return image
+        
+        print(final_cropped.shape, final_cropped.shape[0]*final_cropped.shape[1], FILTER_SIZE*FILTER_SIZE)
+
         final_cropped = cv2.cvtColor(final_cropped, cv2.COLOR_BGR2RGB)
 
         # image_t = T.Compose([T.Resize(RESIZE, Image.ANTIALIAS), T.ToTensor(),                             T.Normalize(mean=imagenet_mean, std=imagenet_std)])(Image.fromarray(image_cv2)).unsqueeze(0).to(DEVICE)
@@ -383,13 +402,16 @@ class PModel:
         out_mask_averaged = torch.nn.functional.avg_pool2d(out_mask_sm[:, 1:, :, :], 21, stride=1, padding=21 // 2).cpu().detach().numpy()
         image_score = out_mask_averaged.max(axis=(1, 2, 3)).tolist()[0]
 
-        if image_score > THRESHOLD:
-            c = [0, 0, 255]
-        else:
+        if image_score < THRESHOLD:
             c = [0, 255, 0]
+            drawn_contours = cv2.drawContours(image, contours, 0, c, 20)
+            drawn_contours = cv2.putText(drawn_contours, f"OK ({image_score * 100:.1f})", (tx-220, ty+500), cv2.FONT_HERSHEY_TRIPLEX, 4, c, TEXT_THICKNES)
+        else:
+            c = [0, 0, 255]
+            drawn_contours = cv2.drawContours(image, contours, 0, c, 20)
+            drawn_contours = cv2.putText(drawn_contours, f"X ({image_score * 100:.1f})", (tx-220, ty+500), cv2.FONT_HERSHEY_TRIPLEX, 4, c, TEXT_THICKNES)
 
-        drawn_contours = cv2.drawContours(image, contours, 0, c, 20)
-        drawn_contours = cv2.putText(drawn_contours, f"{image_score * 100:.1f}", (tx, ty), cv2.FONT_HERSHEY_TRIPLEX, 5, c, TEXT_THICKNES)
+
 
         #return cv2.cvtColor(out_mask_averaged, cv2.COLOR_GRAY2RGB)
         return cv2.cvtColor(drawn_contours, cv2.COLOR_BGR2RGB)
@@ -399,9 +421,9 @@ class PModel:
 
 import glob, os
 
-THRESHOLD = 0.25
-TEXT_THICKNES = 10
-
+THRESHOLD = 0.50
+TEXT_THICKNES = 7
+FILTER_SIZE = 200
 
 class FolderProcessing:
     def __init__(self, detection_method, folder, img_ext, out_folder=None):
