@@ -16,7 +16,7 @@ ENV MODEL_DIR /opt
 WORKDIR $MODEL_DIR
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential cmake git python3-dev python3-numpy-dev python3-pip libopencv-dev && \
+        build-essential wget cmake git python3-dev python3-numpy-dev python3-pip libopencv-dev && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Get echolib
@@ -34,7 +34,7 @@ COPY scripts ${MODEL_DIR}
 RUN chmod +x ${MODEL_DIR}/run_main.py
 
 ARG MODEL_NAME="poco_model.hdf5"
-RUN wget https://box.vicos.si/vicos-cube/polyp/docker/models/${MODEL_NAME} ${MODEL_DIR}/model.hdf5
+#RUN wget https://box.vicos.si/vicos-cube/polyp/docker/models/${MODEL_NAME} ${MODEL_DIR}/model.hdf5
 
 # define entry-point and default arguments
-ENTRYPOINT ["${MODEL_DIR}/run_main.py", "--model", "${MODEL_DIR}/model.hdf5"]
+ENTRYPOINT ["/opt/run_main.py", "--model", "/opt/poco_model.hdf5"]

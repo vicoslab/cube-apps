@@ -16,7 +16,7 @@ ENV MODEL_DIR /opt
 WORKDIR $MODEL_DIR
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        build-essential cmake git python3-dev python3-numpy-dev python3-pip libopencv-dev && \
+        build-essential wget cmake git python3-dev python3-numpy-dev python3-pip libopencv-dev && \
     apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Get echolib
@@ -32,10 +32,10 @@ RUN pip3 install future
 
 COPY scripts ${MODEL_DIR}
 
-RUN wget https://box.vicos.si/vicos-cube/ploscice/docker/models/6_FINAL.pth ${MODEL_DIR}/model.pth
-RUN wget https://box.vicos.si/vicos-cube/ploscice/docker/models/6_seg_FINAL.pth ${MODEL_DIR}/model_seg.pth
+#RUN wget https://box.vicos.si/vicos-cube/ploscice/docker/models/6_FINAL.pth ${MODEL_DIR}/model.pth
+#RUN wget https://box.vicos.si/vicos-cube/ploscice/docker/models/6_seg_FINAL.pth ${MODEL_DIR}/model_seg.pth
 
 RUN chmod +x ${MODEL_DIR}/run_main.py
 
 # define entry-point and default arguments
-ENTRYPOINT ["${MODEL_DIR}//run_main.py", "--model", "${MODEL_DIR}/model.pth", "--model_seg", "${MODEL_DIR}/model_seg.pth"]
+ENTRYPOINT ["/opt/run_main.py", "--model", "/opt/6_FINAL.pth", "--model_seg", "/opt/6_seg_FINAL.pth"]
