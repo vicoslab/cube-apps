@@ -2,6 +2,6 @@
 <cfg>
     <demoId>PD</demoId>
     <dockerId>poco-vicos-demo:ubuntu18.04-cuda11.2.0-cudnn8</dockerId>
-    <highlight>Detekcija polipov</highlight>
+    <highlight>Štetje polipov</highlight>
     <video>demo.mp4</video>
 </cfg>

@@ -2,6 +2,6 @@
 <cfg>
     <demoId>CD</demoId>
     <dockerId>cloth-demo:latest</dockerId>
-    <highlight>Detekcija vogalov</highlight>
-    <video>temp.mp4</video>
+    <highlight>Zaznavanje vogalov</highlight>
+    <video>krpe.mp4</video>
 </cfg>
