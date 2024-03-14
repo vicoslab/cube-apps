@@ -42,12 +42,15 @@ class ClothDemo:
 
         self.to_tensor = transforms.ToTensor()
 
-        two_padding = args["padding"] * 2
-        self.resize = transforms.Resize((args["size"] - two_padding, args["size"] - two_padding))
-        self.pad = transforms.Pad((args["padding"], args["padding"]))
         self.threshold = args["threshold"]
+        self.padding = args["padding"] if "padding" in args else 0
         self.size = args["size"]
-        self.padding = args["padding"]
+        
+        self.resize = transforms.Resize((self.size - 2*self.padding, self.size - 2*self.padding))
+        self.pad = transforms.Pad((self.padding, self.padding))
+        
+        
+        
 
     def predict(self, image):
         image_tensor = self.to_tensor(image)
