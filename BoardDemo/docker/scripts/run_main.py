@@ -15,6 +15,7 @@ from efficientnet_pytorch import EfficientNet
 
 DEVICE = "cuda:0"
 RESIZE = (1512, 536)
+FILTER_SIZE = 200
 
 def rotate_image(mat, angle):
     """
@@ -67,7 +68,7 @@ def crop_part(image):
             break
         if threshold in tried:
             print(f"Cant find suitable threshold!!!")
-            break
+            return None, None, 0, 0
 
     ccs = cv2.connectedComponentsWithStats(dilated)
 
@@ -106,7 +107,24 @@ class PModel:
         self.model.to(DEVICE)
 
     def predict(self, image):
-        cropped_part, contours, tx, ty = crop_part(image)
+
+        try:
+            cropped_part, contours, tx, ty = crop_part(image)
+        except Exception as e:
+            print(e)
+            cv2.putText(image, f"X", (500, 500), cv2.FONT_HERSHEY_TRIPLEX, 5, [0, 0, 255], 5)
+            return image
+
+        if cropped_part is None:
+            print("cropped_part is None")
+            cv2.putText(image, f"X", (500, 500), cv2.FONT_HERSHEY_TRIPLEX, 5, [0, 0, 255], 5)
+            return image
+        
+        print("Board shape: ",cropped_part.shape, FILTER_SIZE)
+        
+        if cropped_part.shape[0]*cropped_part.shape[1] < FILTER_SIZE*FILTER_SIZE:
+            cv2.putText(image, f"X", (500, 500), cv2.FONT_HERSHEY_TRIPLEX, 5, [0, 0, 255], 5)
+            return image
 
         image_t = T.Compose([T.Resize(RESIZE, Image.ANTIALIAS), T.ToTensor(),
                              T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])(Image.fromarray(cropped_part)).unsqueeze(0).to(DEVICE)
