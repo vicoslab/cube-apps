@@ -20,7 +20,7 @@ ENV MODEL_DIR /opt
 WORKDIR ${MODEL_DIR}
 
 ARG CEDIRNET_VERSION=12
-RUN git clone --branch vicos_demo --depth 1 https://DockerPull:glpat-scfQzKpmYhGz1wi3nXDD@gitlab.fri.uni-lj.si/vicos/divid/cedirnet-dev.git
+RUN git clone --branch vicos_demo --depth 1 https://DockerPull:glpat-La3echzmAvsRyxBhzNWz@gitlab.fri.uni-lj.si/vicos/divid/cedirnet-dev.git
 RUN cd cedirnet-dev
 
 # install models 
