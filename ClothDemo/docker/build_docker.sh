@@ -9,7 +9,9 @@
 # save it as center_model.pth
 
 # For this demo, only no_depth models work!
-MODEL_VERSION="no_depth_large"
+#MODEL_VERSION="no_depth_large"
+#MODEL_VERSION="no_depth_base_aug=hflip+vflip+rot+jitter"
+MODEL_VERSION="no_depth_base_aug=hflip+vflip+rot+jitter_epoch50" 
 
 docker build -t cloth-demo --build-arg CEDIRNET_VERSION=$(date +%s) --build-arg MODEL_VERSION=${MODEL_VERSION} .
 
