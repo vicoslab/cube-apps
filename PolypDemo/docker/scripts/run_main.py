@@ -316,7 +316,11 @@ class FolderProcessing:
         for img_filename in self.img_list:
 
             frame = cv2.imread(img_filename)
-            frame = self.detection_method.predict(frame)
+            try:
+                frame = self.detection_method.predict(frame)
+            except Exception as e:
+                print(e)
+                cv2.putText(frame, f"Failed to detect image", (500, 500), cv2.FONT_HERSHEY_TRIPLEX, 5, [0, 0, 255], 10)
 
             if self.out_folder != None:
                 cv2.imwrite(os.path.join(self.out_folder, os.path.basename(img_filename)), frame)
