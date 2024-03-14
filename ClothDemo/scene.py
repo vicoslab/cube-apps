@@ -1,5 +1,7 @@
 from opengl_gui.gui_components import *
 
+import numpy as np
+
 class Command:
     DISABLE = 0
     ENABLE = 1
@@ -9,7 +11,7 @@ class Command:
     CAMERA_STREAM_KINECT_V2 = 12
 
 def get_scene(parameters):
-    
+        
     parameters.state.enable_detection = 0
     parameters.state.activate_camera = "default"
 
@@ -23,7 +25,27 @@ def get_scene(parameters):
         if not echolib_handler.docker_channel_ready:
             return None
         
-        return echolib_handler.get_image() #if state.enable_detection == 1 else echolib_handler.get_camera_stream()
+        img = echolib_handler.get_image() #if state.enable_detection == 1 else echolib_handler.get_camera_stream()
+
+        if img is not None:
+            expected_aspect_ratio = state.get_aspect_ratio()
+            img_aspect_ratio = img.shape[1] / img.shape[0]
+
+            # pad image if aspect ratio is not the same
+            #if expected_aspect_ratio > img_aspect_ratio:
+            #        pad = np.abs(int((img.shape[0] * expected_aspect_ratio - img.shape[1]) / 2))
+            #        img = np.pad(img, ((0, 0), (pad, pad), (0, 0)), mode='constant', constant_values=0)
+            #elif expected_aspect_ratio < img_aspect_ratio:
+            #        pad = np.abs(int((img.shape[1] / expected_aspect_ratio - img.shape[0]) / 2))
+            #        img = np.pad(img, ((pad, pad), (0, 0), (0, 0)), mode='constant', constant_values=0)
+            if expected_aspect_ratio > img_aspect_ratio:
+                    crop = np.abs(int((img.shape[1] / expected_aspect_ratio - img.shape[0]) / 2))
+                    img = img[crop:-crop,:]
+            elif expected_aspect_ratio < img_aspect_ratio:
+                    crop = np.abs(int((img.shape[0] * expected_aspect_ratio - img.shape[1]) / 2))
+                    img = img[:,crop:-crop]
+                    
+        return img
 
     def toggle_detection(button: Button, gui: Gui, state):
 
@@ -107,6 +129,6 @@ def get_scene(parameters):
     from functools import partial
     add_camera_select_button(cam_selector_pane, 1, partial(switch_camera,camera_stream=Command.CAMERA_STREAM_DEFAULT), "Glavna kamera", position=0.01, enabled=False)
     add_camera_select_button(cam_selector_pane, 2, partial(switch_camera,camera_stream=Command.CAMERA_STREAM_KINECT_AZURE), "Kinect Azure", position=0.34, enabled=True)
-    add_camera_select_button(cam_selector_pane, 3, partial(switch_camera,camera_stream=Command.CAMERA_STREAM_KINECT_V2), "Kinect v2", position=0.67, enabled=True)
+    #add_camera_select_button(cam_selector_pane, 3, partial(switch_camera,camera_stream=Command.CAMERA_STREAM_KINECT_V2), "Kinect v2", position=0.67, enabled=True)
 
     return {"get_docker_texture": get_docker_texture, "elements": [button_detection, cam_selector_pane]}
