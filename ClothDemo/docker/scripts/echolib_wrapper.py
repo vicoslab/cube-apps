@@ -34,7 +34,7 @@ class EcholibWrapper:
         self.docker_ready      = echolib.Publisher(self.client, "containerReady", "int")
         self.docker_command_in = echolib.Subscriber(self.client, "docker_demo_command_input", "int", self._docker_command_callback)
         
-        self.camera_stream    = FrameSubscriber(self.client, self.CAMERA_STREAMS[Command.CAMERA_STREAM_DEFAULT]['rgb'], self._camera_stream_callback)
+        self.camera_stream    = FrameSubscriber(self.client, self.CAMERA_STREAMS[Command.CAMERA_STREAM_KINECT_AZURE]['rgb'], self._camera_stream_callback)
         self.camera_stream_depth    = None
 
         self.docker_frame_out = FramePublisher(self.client, "docker_demo_output")
