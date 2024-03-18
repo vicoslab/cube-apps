@@ -6,6 +6,11 @@ from echolib.camera import Frame, FramePublisher, FrameSubscriber
 
 from threading import Thread
 
+class Command:
+    
+    DISABLE = 0
+    ENABLE = 1
+    
 
 class EcholibWrapper:
     
@@ -37,10 +42,14 @@ class EcholibWrapper:
 
     def _docker_command_callback(self, message):
 
-        self.enabled = echolib.MessageReader(message).readInt() != 0
-
-        print("Docker demo: got command {}".format(self.enabled))    
-
+        msg = echolib.MessageReader(message).readInt()
+        print("Docker demo: got command {}".format(msg))    
+        
+        if msg == Command.DISABLE:
+            self.enabled = False
+        elif msg == Command.ENABLE:
+            self.enabled = True
+            
     def _camera_stream_callback(self, message):
 
         self.frame_in    = message.image
