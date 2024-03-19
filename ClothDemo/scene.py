@@ -127,8 +127,8 @@ def get_scene(parameters):
         return cam_selector
 
     from functools import partial
-    add_camera_select_button(cam_selector_pane, 1, partial(switch_camera,camera_stream=Command.CAMERA_STREAM_DEFAULT), "Glavna kamera", position=0.01, enabled=False)
-    add_camera_select_button(cam_selector_pane, 2, partial(switch_camera,camera_stream=Command.CAMERA_STREAM_KINECT_AZURE), "Kinect Azure", position=0.34, enabled=True)
+    add_camera_select_button(cam_selector_pane, 1, partial(switch_camera,camera_stream=Command.CAMERA_STREAM_DEFAULT), "Glavna kamera", position=0.01, enabled=True)
+    add_camera_select_button(cam_selector_pane, 2, partial(switch_camera,camera_stream=Command.CAMERA_STREAM_KINECT_AZURE), "Kinect Azure", position=0.34, enabled=False)
     #add_camera_select_button(cam_selector_pane, 3, partial(switch_camera,camera_stream=Command.CAMERA_STREAM_KINECT_V2), "Kinect v2", position=0.67, enabled=True)
 
     return {"get_docker_texture": get_docker_texture, "elements": [button_detection, cam_selector_pane]}
