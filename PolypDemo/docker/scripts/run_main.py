@@ -19,8 +19,9 @@ RESIZE_RES = (2080, 1470)
 
 DET_THICKNESS = 5
 FONT_THICKNESS = 4
-FONT_SCALE = 3
-FONT_COLOR = (153, 204, 255)
+FONT_SCALE = 5
+FONT_COLOR = (255, 204, 153)
+#FONT_COLOR = (0, 255, 0) 
 
 class PModel:
 
@@ -152,7 +153,7 @@ class PModel:
         idxs = np.argsort(y2)
 
         while len(idxs) > 0:
-            last = len(idxs) - 1
+            last = len(idxs) - 1 
             i = idxs[last]
             pick.append(i)
 
@@ -172,160 +173,176 @@ class PModel:
 
     def predict(self, image_full):
         print("Start")
-        bw = cv2.cvtColor(image_full, cv2.COLOR_BGR2GRAY)
-        threshold = 150
-        r, t = cv2.threshold(bw, threshold, 255, cv2.THRESH_BINARY)
+        cv2.imwrite('/tmp/vicos-cube/last.png', image_full)
+        try:
 
-        kernel_size = 30
-        d = cv2.dilate(t, np.ones((kernel_size, kernel_size)))
-        e = cv2.erode(d, np.ones((kernel_size, kernel_size)))
-        e2 = cv2.erode(e, np.ones((kernel_size, kernel_size)))
-        d2 = cv2.dilate(e2, np.ones((kernel_size, kernel_size)))
+            bw = cv2.cvtColor(image_full, cv2.COLOR_BGR2GRAY)
+            threshold = 150
+            r, t = cv2.threshold(bw, threshold, 255, cv2.THRESH_BINARY)
 
-        ccs = cv2.connectedComponentsWithStats(d2)
-        ix = np.argsort(-ccs[2][1:, -1])[0]
-        xc, yc, wc, hc, area = ccs[2][ix + 1]
-        cc_mask = ccs[1] == ix + 1
-        contours, _ = cv2.findContours(image=cc_mask.astype(np.uint8), mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_NONE)
+            kernel_size = 30
+            d = cv2.dilate(t, np.ones((kernel_size, kernel_size)))
+            e = cv2.erode(d, np.ones((kernel_size, kernel_size)))
+            e2 = cv2.erode(e, np.ones((kernel_size, kernel_size)))
+            d2 = cv2.dilate(e2, np.ones((kernel_size, kernel_size)))
 
-        _, (w_min, h_min), angle = cv2.minAreaRect(contours[0])
-        cutout = image_full[yc:yc + hc, xc:xc + wc]
-        rotated = rotate_image(cutout, angle)
-        h_r, w_r, _ = rotated.shape
-        y_rc, x_rc = h_r // 2, w_r // 2
-        final_crop = 120
-        final_cropped = rotated[int(y_rc - h_min // 2) + final_crop:int(y_rc + h_min // 2) - final_crop, int(x_rc - w_min // 2) + final_crop:int(x_rc + w_min // 2) - final_crop]
-        if final_cropped.shape[0] > final_cropped.shape[1]:
-            final_cropped = cv2.rotate(final_cropped, cv2.ROTATE_90_CLOCKWISE)
-
-        resized_input = cv2.resize(final_cropped, RESIZE_RES)
-
-        draw_det_image = np.zeros(resized_input.shape[:2], dtype=np.uint8)
-
-        print(f"Working with size of resized_input:{resized_input.shape}")
-
-        image = resized_input
+            ccs = cv2.connectedComponentsWithStats(d2)
+            ix = np.argsort(-ccs[2][1:, -1])[0]
+            xc, yc, wc, hc, area = ccs[2][ix + 1]
+            cc_mask = ccs[1] == ix + 1
+            contours, _ = cv2.findContours(image=cc_mask.astype(np.uint8), mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_NONE)
         
-        D = 512
-
-        xSmall = ySmall = False
-        if image.shape[0] < D:
-            print("Too small x axis")
-            xSmall = True
-        if image.shape[1] < D:
-            print("Too small y axis")
-            ySmall = True
-
-        image = cv2.resize(image, (D if ySmall else image.shape[1], D if xSmall else image.shape[0]), interpolation=cv2.INTER_AREA) if any([xSmall, ySmall]) else image
-
-        print("Prediction request: image shape {}".format(image.shape))
-
-        origImage = image[..., ::-1].astype(np.float32) / 255.0
-        origShape = origImage.shape
-        refShape = origImage.shape
-
-        partsY = refShape[0] // D
-        partsX = refShape[1] // D
-        divisorPower = 1
-
-        print("PartsY {} PartsX {}".format(partsY, partsX))
-
-        while partsY % (2 ** divisorPower) == 0 and partsX % (2 ** divisorPower) == 0:
-            divisorPower += 1
-        divisorRequired = (2 ** (self.blockNumber - divisorPower + 2))
-
-        print("DivisorRequired {}".format(divisorRequired))
-
-        refShape = [refShape[0] // (partsY * divisorRequired) * (partsY * divisorRequired),
-                    refShape[1] // (partsX * divisorRequired) * (partsX * divisorRequired),
-                    refShape[2]]
-
-        print("RefShape {}".format(refShape))
-
-        origImage = cv2.resize(origImage, (refShape[1], refShape[0]), interpolation=cv2.INTER_AREA)
-        
-        print("OrigImage shape {}".format(origImage.shape))
-    
-        maskResult = self.__splitAndPredict(partsX, partsY, origImage)
-        maskResult = cv2.resize(maskResult, (maskResult.shape[1] // 2, maskResult.shape[0] // 2), interpolation=cv2.INTER_AREA)
-        maskResult = maskResult / np.max(maskResult)
-        
-        tBoxes = self.__generate_detections_from_mask(maskResult, threshold=50)
-
-        print("Found {} boxes".format(len(tBoxes)))
-
-        if (len(tBoxes) != 0):
-
-            tBoxes[:, 0] = tBoxes[:, 0] / maskResult.shape[0] * origShape[0]
-            tBoxes[:, 1] = tBoxes[:, 1] / maskResult.shape[1] * origShape[1]
-            tBoxes[:, 2] = tBoxes[:, 2] / maskResult.shape[0] * origShape[0]
-            tBoxes[:, 3] = tBoxes[:, 3] / maskResult.shape[1] * origShape[1]
-
-            tBoxes = np.array(list(filter(lambda x: (x[2] * x[3] > 0) and (x[0] > 0) and (x[1] > 0), tBoxes)))
-            if self.sizeRange != None:
-                tBoxes = np.array(list(filter(lambda x: x[2] < 1.0 * self.sizeRange[1] and x[3] < 1.0 * self.sizeRange[1] and
-                                                        x[2] >= 0.5 * self.sizeRange[0] and x[3] >= 0.5 * self.sizeRange[0] and
-                                                        x[0] > 0.0 and x[1] > 0.0, tBoxes)))
-
-            tBoxes[:, 0] = tBoxes[:, 0] + tBoxes[:, 2] // 2
-            tBoxes[:, 1] = tBoxes[:, 1] + tBoxes[:, 3] // 2
-
-            tBoxes = self.__non_max_sup_boxes(tBoxes, overlapThresh=0.7)
-
-            for b in tBoxes:
-                xd = b[0]
-                yd = b[1]
-                wd = b[2]
-                hd = b[3]
+            
+            _, (w_min, h_min), angle = cv2.minAreaRect(contours[0])
+            cutout = image_full[yc:yc + hc, xc:xc + wc]
+            rotated = rotate_image(cutout, angle)
+            h_r, w_r, _ = rotated.shape
+            y_rc, x_rc = h_r // 2, w_r // 2
+            final_crop = 120
+            final_cropped = rotated[int(y_rc - h_min // 2) + final_crop:int(y_rc + h_min // 2) - final_crop, int(x_rc - w_min // 2) + final_crop:int(x_rc + w_min // 2) - final_crop]
+            
+            rotated_final_by_90 = False
+            if final_cropped.shape[0] > final_cropped.shape[1]:
+                final_cropped = cv2.rotate(final_cropped, cv2.ROTATE_90_CLOCKWISE)
+                rotated_final_by_90 = True
                 
-                # Skip detection that will be outside the bounds of the image
-                if (xd - wd // 2 >= 0) and (yd - hd // 2 >= 0) and (xd + wd // 2 < origShape[1]) and (yd + hd // 2 < origShape[0]):
-                    cv2.circle(draw_det_image, (xd, yd), radius=wd//2, color=255, thickness=DET_THICKNESS)
 
-        draw_det_image = cv2.resize(draw_det_image, dsize=(final_cropped.shape[1], final_cropped.shape[0]))
+            resized_input = cv2.resize(final_cropped, RESIZE_RES)
+
+            draw_det_image = np.zeros(resized_input.shape[:2], dtype=np.uint8)
+
+            print(f"Working with size of resized_input:{resized_input.shape}")
+
+            image = resized_input
+            
+            D = 512
+
+            xSmall = ySmall = False
+            if image.shape[0] < D:
+                print("Too small x axis")
+                xSmall = True
+            if image.shape[1] < D:
+                print("Too small y axis")
+                ySmall = True
+
+            image = cv2.resize(image, (D if ySmall else image.shape[1], D if xSmall else image.shape[0]), interpolation=cv2.INTER_AREA) if any([xSmall, ySmall]) else image
+
+            print("Prediction request: image shape {}".format(image.shape))
+
+            origImage = image[..., ::-1].astype(np.float32) / 255.0
+            origShape = origImage.shape
+            refShape = origImage.shape
+
+            partsY = refShape[0] // D
+            partsX = refShape[1] // D
+            divisorPower = 1
+
+            print("PartsY {} PartsX {}".format(partsY, partsX))
+
+            while partsY % (2 ** divisorPower) == 0 and partsX % (2 ** divisorPower) == 0:
+                divisorPower += 1
+            divisorRequired = (2 ** (self.blockNumber - divisorPower + 2))
+
+            print("DivisorRequired {}".format(divisorRequired))
+
+            refShape = [refShape[0] // (partsY * divisorRequired) * (partsY * divisorRequired),
+                        refShape[1] // (partsX * divisorRequired) * (partsX * divisorRequired),
+                        refShape[2]]
+
+            print("RefShape {}".format(refShape))
+
+            origImage = cv2.resize(origImage, (refShape[1], refShape[0]), interpolation=cv2.INTER_AREA)
+            
+            print("OrigImage shape {}".format(origImage.shape))
         
-        mask = np.zeros((rotated.shape[0], rotated.shape[1]), dtype=np.uint8)
-        mask[int(y_rc - h_min // 2) + final_crop:int(y_rc + h_min // 2) - final_crop, int(x_rc - w_min // 2) + final_crop:int(x_rc + w_min // 2) - final_crop] = draw_det_image
-        
-        mask = rotate_image(mask, - angle)
+            maskResult = self.__splitAndPredict(partsX, partsY, origImage)
+            maskResult = cv2.resize(maskResult, (maskResult.shape[1] // 2, maskResult.shape[0] // 2), interpolation=cv2.INTER_AREA)
+            maskResult = maskResult / np.max(maskResult)
+            
+            tBoxes = self.__generate_detections_from_mask(maskResult, threshold=50)
 
-        t = int(mask.shape[0]//2 - cutout.shape[0]// 2)
-        b = int(t + cutout.shape[0])
-        l = int(mask.shape[1]//2 - cutout.shape[1]// 2)
-        r = int(l + cutout.shape[1])
+            print("Found {} boxes".format(len(tBoxes)))
 
-        # Check if mask is not large enough
-        if t < 0 or b > mask.shape[0] or l < 0 or r > mask.shape[1]:
-            # Calculate padding values
-            top_pad = abs(t) if t < 0 else 0
-            bottom_pad = b - mask.shape[0] if b > mask.shape[0] else 0
-            left_pad = abs(l) if l < 0 else 0
-            right_pad = r - mask.shape[1] if r > mask.shape[1] else 0
+            if (len(tBoxes) != 0):
 
-            # Pad the mask
-            mask = cv2.copyMakeBorder(mask, top_pad, bottom_pad, left_pad, right_pad, cv2.BORDER_CONSTANT, value=0)
+                tBoxes[:, 0] = tBoxes[:, 0] / maskResult.shape[0] * origShape[0]
+                tBoxes[:, 1] = tBoxes[:, 1] / maskResult.shape[1] * origShape[1]
+                tBoxes[:, 2] = tBoxes[:, 2] / maskResult.shape[0] * origShape[0]
+                tBoxes[:, 3] = tBoxes[:, 3] / maskResult.shape[1] * origShape[1]
 
-            # Update t, b, l, r after padding
-            t += top_pad
-            b += bottom_pad
-            l += left_pad
-            r += right_pad
+                tBoxes = np.array(list(filter(lambda x: (x[2] * x[3] > 0) and (x[0] > 0) and (x[1] > 0), tBoxes)))
+                if self.sizeRange != None:
+                    tBoxes = np.array(list(filter(lambda x: x[2] < 1.0 * self.sizeRange[1] and x[3] < 1.0 * self.sizeRange[1] and
+                                                            x[2] >= 0.5 * self.sizeRange[0] and x[3] >= 0.5 * self.sizeRange[0] and
+                                                            x[0] > 0.0 and x[1] > 0.0, tBoxes)))
 
-        mask = mask[t:b, l:r]
+                tBoxes[:, 0] = tBoxes[:, 0] + tBoxes[:, 2] // 2
+                tBoxes[:, 1] = tBoxes[:, 1] + tBoxes[:, 3] // 2
 
-        mask_full = np.zeros(image_full.shape[:2], dtype=np.uint8)
-        mask_full[yc:yc + hc, xc:xc + wc] = mask
-        mask_full = (mask_full > 128).astype(np.uint8)
-        
-        mask_full3 = np.stack((mask_full, mask_full, mask_full), axis=-1)
-        green = np.stack((np.zeros_like(mask_full), np.ones_like(mask_full) * 255, np.zeros_like(mask_full)), axis=-1)
+                tBoxes = self.__non_max_sup_boxes(tBoxes, overlapThresh=0.7)
 
-        final = mask_full3 * green + (1 - mask_full3) * image_full
+                for b in tBoxes:
+                    xd = b[0]
+                    yd = b[1]
+                    wd = b[2]
+                    hd = b[3]
+                    
+                    # Skip detection that will be outside the bounds of the image
+                    if (xd - wd // 2 >= 0) and (yd - hd // 2 >= 0) and (xd + wd // 2 < origShape[1]) and (yd + hd // 2 < origShape[0]):
+                        cv2.circle(draw_det_image, (xd, yd), radius=wd//2, color=255, thickness=DET_THICKNESS)
 
-        cv2.putText(final, "Stevilo detektiranih polipov je {}".format(len(tBoxes)), (300, image_full.shape[0]-300), fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=FONT_SCALE, color=FONT_COLOR, thickness=FONT_THICKNESS)
+            if rotated_final_by_90:
+                draw_det_image  = cv2.rotate(draw_det_image, cv2.ROTATE_90_COUNTERCLOCKWISE)
+            draw_det_image = cv2.resize(draw_det_image, dsize=(final_cropped.shape[0], final_cropped.shape[1]) if rotated_final_by_90 else (final_cropped.shape[1], final_cropped.shape[0]))
+            
+            mask = np.zeros((rotated.shape[0], rotated.shape[1]), dtype=np.uint8)
+            mask[int(y_rc - h_min // 2) + final_crop:int(y_rc + h_min // 2) - final_crop, int(x_rc - w_min // 2) + final_crop:int(x_rc + w_min // 2) - final_crop] = draw_det_image
+            
+            mask = rotate_image(mask, - angle)
 
-        return cv2.cvtColor(final, cv2.COLOR_BGR2RGB)
+            t = int(mask.shape[0]//2 - cutout.shape[0]// 2)
+            b = int(t + cutout.shape[0])
+            l = int(mask.shape[1]//2 - cutout.shape[1]// 2)
+            r = int(l + cutout.shape[1])
 
+            # Check if mask is not large enough
+            if t < 0 or b > mask.shape[0] or l < 0 or r > mask.shape[1]:
+                # Calculate padding values
+                top_pad = abs(t) if t < 0 else 0
+                bottom_pad = b - mask.shape[0] if b > mask.shape[0] else 0
+                left_pad = abs(l) if l < 0 else 0
+                right_pad = r - mask.shape[1] if r > mask.shape[1] else 0
+
+                # Pad the mask
+                mask = cv2.copyMakeBorder(mask, top_pad, bottom_pad, left_pad, right_pad, cv2.BORDER_CONSTANT, value=0)
+
+                # Update t, b, l, r after padding
+                t += top_pad
+                b += bottom_pad
+                l += left_pad
+                r += right_pad
+            
+            
+            mask = mask[t:b, l:r]
+            
+            mask_full = np.zeros(image_full.shape[:2], dtype=np.uint8)
+            mask_full[yc:yc + hc, xc:xc + wc] = mask
+            mask_full = (mask_full > 128).astype(np.uint8)
+            
+            mask_full3 = np.stack((mask_full, mask_full, mask_full), axis=-1)
+            green = np.stack((np.zeros_like(mask_full), np.ones_like(mask_full) * 255, np.zeros_like(mask_full)), axis=-1)
+
+            final = mask_full3 * green + (1 - mask_full3) * image_full
+
+            cv2.putText(final, "Stevilo detektiranih polipov je {}".format(len(tBoxes)), (300, image_full.shape[0]-300), fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=FONT_SCALE, color=FONT_COLOR, thickness=FONT_THICKNESS)
+
+            return cv2.cvtColor(final, cv2.COLOR_BGR2RGB)
+
+        except Exception as e:
+            import traceback,sys
+            traceback.print_exception(*sys.exc_info()) 
+            print(e)
+            return cv2.cvtColor(image_full, cv2.COLOR_BGR2RGB)
 
 import glob, os
 
