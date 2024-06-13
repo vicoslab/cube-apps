@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cfg>
+    <demoId>CD0</demoId>
+    <dockerId>counting-demo:ubuntu20.04-cuda12.5.0</dockerId>
+    <highlight>Štetje objektov</highlight>
+    <video>demo.mp4</video>
+</cfg>
