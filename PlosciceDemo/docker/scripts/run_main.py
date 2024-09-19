@@ -14,12 +14,18 @@ import torch
 from torchvision import transforms as T
 from PIL import Image
 
-from utils import crop_part
+from utils import crop_part_single, crop_part_multi 
 
 print("Ploscice startup")
 
 DEVICE = "cuda:0"
 RESIZE = (480, 480)
+
+CROP_PIXEL = 5          # ignore 5px border when object is cropped
+MIN_BOARD_AREA = 200    # object should be at least 200px in area
+
+THRESHOLD = 0.50
+TEXT_THICKNES = 7
 
 imagenet_mean = np.array([0.485, 0.456, 0.406])
 imagenet_std = np.array([0.229, 0.224, 0.225])
@@ -350,9 +356,6 @@ class DecoderReconstructive(nn.Module):
         return out
 
 
-CROP_PIXEL = -20
-
-
 class PModel:
 
     def __init__(self, modelFile, modelSegFile, blockNumber=4, sizeRange=None):
@@ -373,57 +376,55 @@ class PModel:
 
     def predict(self, image):
         try:
-            final_cropped, contours, tx, ty = crop_part(image, CROP_PIXEL)
+            drawn_true = False
+            drawn_contours = image.copy()
+            for final_cropped, contours, tx, ty in crop_part_multi(image, CROP_PIXEL, MIN_AREA_THR=MIN_BOARD_AREA):
+                if final_cropped is None:
+                    continue
+
+                #if final_cropped.shape[0]*final_cropped.shape[1] < MIN_BOARD_AREA*MIN_BOARD_AREA:
+                #    continue
+                    
+                print(final_cropped.shape, final_cropped.shape[0]*final_cropped.shape[1], MIN_BOARD_AREA*MIN_BOARD_AREA)
+
+                final_cropped = cv2.cvtColor(final_cropped, cv2.COLOR_BGR2RGB)
+
+                # image_t = T.Compose([T.Resize(RESIZE, Image.ANTIALIAS), T.ToTensor(),                             T.Normalize(mean=imagenet_mean, std=imagenet_std)])(Image.fromarray(image_cv2)).unsqueeze(0).to(DEVICE)
+                image_t = T.Compose([T.Resize(RESIZE, Image.ANTIALIAS), T.ToTensor()])(Image.fromarray(final_cropped)).unsqueeze(0).to(DEVICE)
+
+                gray_rec = self.model(image_t)
+                joined_in = torch.cat((gray_rec.detach(), image_t), dim=1)
+                out_mask = self.model_seg(joined_in)
+                out_mask_sm = torch.softmax(out_mask, dim=1)
+                out_mask_averaged = torch.nn.functional.avg_pool2d(out_mask_sm[:, 1:, :, :], 21, stride=1, padding=21 // 2).cpu().detach().numpy()
+                image_score = out_mask_averaged.max(axis=(1, 2, 3)).tolist()[0]
+
+                if image_score < THRESHOLD:
+                    c = [0, 255, 0]
+                    drawn_contours = cv2.drawContours(drawn_contours, contours, 0, c, 20)
+                    drawn_contours = cv2.putText(drawn_contours, f"OK ({image_score * 100:.1f})", (tx-220, ty+500), cv2.FONT_HERSHEY_TRIPLEX, 4, c, TEXT_THICKNES)
+                else:
+                    c = [0, 0, 255]
+                    drawn_contours = cv2.drawContours(drawn_contours, contours, 0, c, 20)
+                    drawn_contours = cv2.putText(drawn_contours, f"X ({image_score * 100:.1f})", (tx-220, ty+500), cv2.FONT_HERSHEY_TRIPLEX, 4, c, TEXT_THICKNES)
+                
+                drawn_true = True
+            
+            if not drawn_true:
+                raise Exception("No objects found")
+            
         except Exception as e:
+            import traceback 
+            traceback.print_exc() 
             print(e)
-            cv2.putText(image, f"X", (500, 500), cv2.FONT_HERSHEY_TRIPLEX, 5, [0, 0, 255], 5)
-            return image
 
-        if final_cropped is None:
-            print("final_cropped is None")
-            cv2.putText(image, f"X", (500, 500), cv2.FONT_HERSHEY_TRIPLEX, 5, [0, 0, 255], 5)
-            return image
-        
-        if final_cropped.shape[0]*final_cropped.shape[1] < FILTER_SIZE*FILTER_SIZE:
-            cv2.putText(image, f"X", (500, 500), cv2.FONT_HERSHEY_TRIPLEX, 5, [0, 0, 255], 5)
-            return image
-        
-        print(final_cropped.shape, final_cropped.shape[0]*final_cropped.shape[1], FILTER_SIZE*FILTER_SIZE)
-
-        final_cropped = cv2.cvtColor(final_cropped, cv2.COLOR_BGR2RGB)
-
-        # image_t = T.Compose([T.Resize(RESIZE, Image.ANTIALIAS), T.ToTensor(),                             T.Normalize(mean=imagenet_mean, std=imagenet_std)])(Image.fromarray(image_cv2)).unsqueeze(0).to(DEVICE)
-        image_t = T.Compose([T.Resize(RESIZE, Image.ANTIALIAS), T.ToTensor()])(Image.fromarray(final_cropped)).unsqueeze(0).to(DEVICE)
-
-        gray_rec = self.model(image_t)
-        joined_in = torch.cat((gray_rec.detach(), image_t), dim=1)
-        out_mask = self.model_seg(joined_in)
-        out_mask_sm = torch.softmax(out_mask, dim=1)
-        out_mask_averaged = torch.nn.functional.avg_pool2d(out_mask_sm[:, 1:, :, :], 21, stride=1, padding=21 // 2).cpu().detach().numpy()
-        image_score = out_mask_averaged.max(axis=(1, 2, 3)).tolist()[0]
-
-        if image_score < THRESHOLD:
-            c = [0, 255, 0]
-            drawn_contours = cv2.drawContours(image, contours, 0, c, 20)
-            drawn_contours = cv2.putText(drawn_contours, f"OK ({image_score * 100:.1f})", (tx-220, ty+500), cv2.FONT_HERSHEY_TRIPLEX, 4, c, TEXT_THICKNES)
-        else:
-            c = [0, 0, 255]
-            drawn_contours = cv2.drawContours(image, contours, 0, c, 20)
-            drawn_contours = cv2.putText(drawn_contours, f"X ({image_score * 100:.1f})", (tx-220, ty+500), cv2.FONT_HERSHEY_TRIPLEX, 4, c, TEXT_THICKNES)
+            cv2.putText(drawn_contours, f"X", (500, 500), cv2.FONT_HERSHEY_TRIPLEX, 5, [0, 0, 255], 5)
 
 
-
-        #return cv2.cvtColor(out_mask_averaged, cv2.COLOR_GRAY2RGB)
         return cv2.cvtColor(drawn_contours, cv2.COLOR_BGR2RGB)
-
-        # return out_mask_averaged, image_score, final_cropped
 
 
 import glob, os
-
-THRESHOLD = 0.50
-TEXT_THICKNES = 7
-FILTER_SIZE = 200
 
 class FolderProcessing:
     def __init__(self, detection_method, folder, img_ext, out_folder=None):
