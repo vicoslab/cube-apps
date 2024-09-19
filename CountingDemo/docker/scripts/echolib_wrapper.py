@@ -4,8 +4,13 @@ import cv2
 import echolib
 from echolib.camera import Frame, FramePublisher, FrameSubscriber
 
-from threading import Thread, Lock
+from threading import Thread
 
+class Command:
+    
+    DISABLE = 0
+    ENABLE = 1
+    
 
 class EcholibWrapper:
     
@@ -37,10 +42,14 @@ class EcholibWrapper:
 
     def _docker_command_callback(self, message):
 
-        self.enabled = echolib.MessageReader(message).readInt() != 0
-
-        print("Docker demo: got command {}".format(self.enabled))    
-
+        msg = echolib.MessageReader(message).readInt()
+        print("Docker demo: got command {}".format(msg))    
+        
+        if msg == Command.DISABLE:
+            self.enabled = False
+        elif msg == Command.ENABLE:
+            self.enabled = True
+            
     def _camera_stream_callback(self, message):
 
         self.frame_in    = message.image
@@ -64,8 +73,6 @@ class EcholibWrapper:
                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                 frame = self.detection_method.predict(frame)
 
-                self.enabled = False
-
             if frame is not None:
 
                 self.frame_out    = frame
@@ -88,6 +95,8 @@ class EcholibWrapper:
         print("Starting...")
 
         while self.loop.wait(1):
+
+            #print("In loop...")
 
             if self.frame_out_new:
                 

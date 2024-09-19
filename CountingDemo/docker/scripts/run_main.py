@@ -9,7 +9,13 @@ from matplotlib import pyplot as plt
 
 from dave.dave import build_model
 
+DET_THICKNESS = 5
+FONT_THICKNESS = 4
+FONT_SCALE = 5
+FONT_COLOR = (255, 204, 153)
+
 cv2.ocl.setUseOpenCL(False)
+
 def resize_and_pad(img, bboxes=None, size=512.0):
     bs, channels, original_height, original_width = img.shape
     longer_dimension = max(original_height, original_width)
@@ -19,14 +25,32 @@ def resize_and_pad(img, bboxes=None, size=512.0):
     size = int(size)
     pad_height = max(0, size - resized_img.shape[2])
     pad_width = max(0, size - resized_img.shape[3])
-    padded_img = torch.nn.functional.pad(resized_img, (0, pad_width, 0, pad_height), mode='constant', value=0)[0]
+    padded_img = torch.nn.functional.pad(resized_img, (0, pad_width, 0, pad_height), mode='constant', value=0)
 
-    _, W, H = img.shape
+    #_, W, H = img.shape
     if bboxes is not None:
         bboxes = bboxes * torch.tensor([scaling_factor, scaling_factor, scaling_factor, scaling_factor])
         return padded_img, bboxes, scaling_factor
     else:
         return padded_img, scaling_factor
+
+
+def find_background_mask(image):
+    bw = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    #################################################################
+    # apply thresholding
+
+    r, t = cv2.threshold(bw,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+    # noise removal
+    kernel = np.ones((5,5),np.uint8)
+    opening = cv2.morphologyEx(t,cv2.MORPH_OPEN,kernel, iterations = 2)
+
+    # sure background area
+    sure_bg = cv2.dilate(opening,kernel,iterations=3)
+
+    return sure_bg
 
 class Count:
     def __init__(self, args):
@@ -54,23 +78,29 @@ class Count:
             # transform image
             image_t = T.ToTensor()(image).unsqueeze(0)
             image_t = T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])(image_t)
-            image, scaling_factor = resize_and_pad(image)
+            image_t, scaling_factor = resize_and_pad(image_t)
             image_t = image_t.to(self.device)
             bboxes = torch.zeros((1, 3, 4), dtype=torch.float32, device=self.device)
 
             # predict bboxes and density maps
             denisty_map, _, _, predicted_bboxes = self.model(image_t, bboxes)
 
+            #sure_bg = find_background_mask(image_t)
+            
+
             # add bboxes to image
             for i in range(len(predicted_bboxes.box)):
                 box = predicted_bboxes.box.cpu()[i].numpy()/scaling_factor
-                image = cv2.rectangle(image, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), (0, 165, 255), 2)
+                image = cv2.circle(image, (int((box[0]+box[2])/2), int((box[1]+box[3])/2)), 7, (0, 0, 255), 7)
+                #image = cv2.rectangle(image, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), (0, 165, 255), 2)
+        
+            count_by_density = round(denisty_map.sum().item())
 
-            image = cv2.putText(image, "Dmap count:" + str(round(denisty_map.sum().item(), 1)) + " Box count:" + str(
-                len(predicted_bboxes.box)), (5, 20), cv2.FONT_HERSHEY_PLAIN, 1.1, (255, 255, 255), 1, cv2.LINE_AA)
+            print("Dmap count:" + str(count_by_density) + " Box count:" + str(len(predicted_bboxes.box)))
 
-            print("Dmap count:" + str(round(denisty_map.sum().item(), 1)) + " Box count:" + str(
-                len(predicted_bboxes.box)))
+            image = cv2.putText(image, "Stevilo detektiranih objektov je {}".format(len(predicted_bboxes.box)), (300, image.shape[0]-300), fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=FONT_SCALE, color=FONT_COLOR, thickness=FONT_THICKNESS)
+            
+            
         return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
 
