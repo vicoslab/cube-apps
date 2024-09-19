@@ -15,7 +15,9 @@ from efficientnet_pytorch import EfficientNet
 
 DEVICE = "cuda:0"
 RESIZE = (1512, 536)
-FILTER_SIZE = 200
+
+CROP_PIXEL = 5           # ignore 5px border when object is cropped
+MIN_BOARD_AREA = 200*200 # object should be at least 200x200 px in area
 
 def rotate_image(mat, angle):
     """
@@ -44,7 +46,7 @@ def rotate_image(mat, angle):
     return rotated_mat
 
 
-def crop_part(image):
+def crop_part_single(image):
     final_crop = 20
 
     bw = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
@@ -75,10 +77,11 @@ def crop_part(image):
     i = 1
     x, y, w, h, area = ccs[2][i]
     cc_mask = ccs[1] == i
-    contours, _ = cv2.findContours(image=cc_mask.astype(np.uint8), mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_NONE)
+    contours, _ = cv2.findContours(image=cc_mask.astype(np.uint8), mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_SIMPLE)
     _, (w_min, h_min), angle = cv2.minAreaRect(contours[0])
 
     points_bb_rect = np.array([[x, y], [x + w, y], [x + w, y + h], [x, y + h]])
+    print(points_bb_rect)
     bb_rect = cv2.fillPoly(np.zeros_like(bw), [points_bb_rect], (255))
     cutout = image[y:y + h, x:x + w]
     rotated = rotate_image(cutout, angle)
@@ -97,6 +100,59 @@ def crop_part(image):
     return final_cropped, contours, tx, ty
 
 
+def crop_part_multi(image, final_crop, MIN_AREA_THR=100):
+    bw = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+
+    #################################################################
+    # apply thresholding
+
+    r, t = cv2.threshold(bw,0,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+    # noise removal
+    kernel = np.ones((5,5),np.uint8)
+    opening = cv2.morphologyEx(t,cv2.MORPH_OPEN,kernel, iterations = 2)
+
+    # sure background area
+    sure_bg = cv2.dilate(opening,kernel,iterations=3)
+
+    ccs = cv2.connectedComponentsWithStats(sure_bg)
+    for i in range(len(ccs[2])):
+
+        x, y, w, h, area = ccs[2][i]
+        cc_mask = ccs[1] == i
+        contours_all, _ = cv2.findContours(image=cc_mask.astype(np.uint8), mode=cv2.RETR_TREE, method=cv2.CHAIN_APPROX_NONE)
+    
+        _, (w_min, h_min), angle = cv2.minAreaRect(contours_all[0])
+
+
+        if final_crop > 0:
+            cutout = image[y:y + h, x:x + w]
+        else:
+            cutout = image[y + int(1.5 * final_crop):y + h - int(1.5 * final_crop), x + int(1.5 * final_crop):x + w - int(1.5 * final_crop)]
+        rotated = rotate_image(cutout, angle)
+
+        h_r, w_r, _ = rotated.shape
+        y_rc, x_rc = h_r // 2, w_r // 2
+        if final_crop > 0:
+            final_cropped = rotated[int(y_rc - h_min // 2) + final_crop:int(y_rc + h_min // 2) - final_crop, int(x_rc - w_min // 2) + final_crop:int(x_rc + w_min // 2) - final_crop]
+            final_cropped = final_cropped[final_crop:-final_crop, final_crop:-final_crop]
+        else:
+            crop = int((w_r - w_min + 2 * final_crop) / 2)
+            final_cropped = rotated[crop:-crop, crop:-crop]
+
+        # skip if contour is actually the whole image or small image (< MIN_AREA_THR px)
+        if final_cropped.shape[0] * final_cropped.shape[1] < max(MIN_AREA_THR,1) or \
+            final_cropped.shape[0] * final_cropped.shape[1] > image.shape[0]*image.shape[1]*0.95:
+            continue
+
+        if final_cropped.shape[0] < final_cropped.shape[1]:
+            final_cropped = cv2.rotate(final_cropped, cv2.ROTATE_90_CLOCKWISE)
+
+        ty = int(y + h // 2) + 45
+        tx = int(x + w // 2) - 45
+
+        yield final_cropped, contours_all, tx, ty
+
 
 class PModel:
 
@@ -109,33 +165,39 @@ class PModel:
     def predict(self, image):
 
         try:
-            cropped_part, contours, tx, ty = crop_part(image)
+            drawn_true = False
+            drawn_contours = image.copy()            
+            for cropped_part, contours, tx, ty in crop_part_multi(image, CROP_PIXEL, MIN_AREA_THR=MIN_BOARD_AREA):
+
+                if cropped_part is None:
+                    print("cropped_part is None")
+                    continue
+                
+                print("Board shape: ",cropped_part.shape, MIN_BOARD_AREA, "tx,ty:", tx, ty)
+                
+                #if cropped_part.shape[0]*cropped_part.shape[1] < FILTER_SIZE*FILTER_SIZE:
+                #    continue
+
+                image_t = T.Compose([T.Resize(RESIZE, Image.ANTIALIAS), T.ToTensor(),
+                                     T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])(Image.fromarray(cropped_part)).unsqueeze(0).to(DEVICE)
+                predictions = self.model(image_t)
+                predicted = predictions.argmax().item()
+
+                print(f"Predicted: {predicted}")
+                
+                drawn_contours = cv2.drawContours(drawn_contours, contours, 0, [0, 255, 0], 20)
+                drawn_contours = cv2.putText(drawn_contours, str(predicted), (tx, ty), cv2.FONT_HERSHEY_TRIPLEX, 5, (0, 255, 0), 20)
+                
+                drawn_true = True
+
+            if not drawn_true:
+                raise Exception("No contours drawn")
         except Exception as e:
+            import traceback 
+            traceback.print_exc() 
             print(e)
-            cv2.putText(image, f"X", (500, 500), cv2.FONT_HERSHEY_TRIPLEX, 5, [0, 0, 255], 5)
-            return image
 
-        if cropped_part is None:
-            print("cropped_part is None")
-            cv2.putText(image, f"X", (500, 500), cv2.FONT_HERSHEY_TRIPLEX, 5, [0, 0, 255], 5)
-            return image
-        
-        print("Board shape: ",cropped_part.shape, FILTER_SIZE)
-        
-        if cropped_part.shape[0]*cropped_part.shape[1] < FILTER_SIZE*FILTER_SIZE:
-            cv2.putText(image, f"X", (500, 500), cv2.FONT_HERSHEY_TRIPLEX, 5, [0, 0, 255], 5)
-            return image
-
-        image_t = T.Compose([T.Resize(RESIZE, Image.ANTIALIAS), T.ToTensor(),
-                             T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])(Image.fromarray(cropped_part)).unsqueeze(0).to(DEVICE)
-        predictions = self.model(image_t)
-        predicted = predictions.argmax().item()
-
-        print(predictions.tolist())
-        print(f"Predicted: {predicted}")
-
-        drawn_contours = cv2.drawContours(image, contours, 0, [0, 255, 0], 20)
-        drawn_contours = cv2.putText(drawn_contours, str(predicted), (tx, ty), cv2.FONT_HERSHEY_TRIPLEX, 5, (0, 255, 0), 20)
+            cv2.putText(drawn_contours, f"X", (500, 500), cv2.FONT_HERSHEY_TRIPLEX, 5, [0, 0, 255], 5)
 
         return cv2.cvtColor(drawn_contours, cv2.COLOR_BGR2RGB)
 
