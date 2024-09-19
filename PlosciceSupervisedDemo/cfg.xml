@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cfg>
+    <demoId>PlSupD</demoId>
+    <dockerId>ploscice-supervised-demo:ubuntu18.04-cuda11.2.0-cudnn8</dockerId>
+    <highlight>Zaznavanje napak</highlight>
+    <video>demo.mp4</video>
+</cfg>
