@@ -49,11 +49,32 @@ class ClothDemo:
         self.resize = transforms.Resize((self.size - 2*self.padding, self.size - 2*self.padding))
         self.pad = transforms.Pad((self.padding, self.padding))
         
-        
-        
+        self.crop_top = args['crop']['top']
+        self.crop_bottom = args['crop']['bottom']
+        self.crop_left = args['crop']['left']
+        self.crop_right = args['crop']['right']
 
     def predict(self, image):
-        image_tensor = self.to_tensor(image)
+        
+        # Crop RGB image
+        rgb_height, rgb_width, _ = image.shape
+        crop_top = int(self.crop_top * rgb_height)
+        crop_bottom = int(self.crop_bottom * rgb_height)
+        crop_left = int(self.crop_left * rgb_width)
+        crop_right = int(self.crop_right * rgb_width)
+
+        masked_image = np.copy(image)
+        masked_image[0:crop_top, :] = 0
+        masked_image[rgb_height-crop_bottom:rgb_height, :] = 0
+        masked_image[:, 0:crop_left] = 0
+        masked_image[:, rgb_width-crop_right:rgb_width] = 0
+        
+        cv2.line(image, (crop_left, crop_top), (rgb_width-crop_right, crop_top), (0, 255, 0), 1)
+        cv2.line(image, (crop_left, rgb_height-crop_bottom), (rgb_width-crop_right, rgb_height-crop_bottom), (0, 255, 0), 1)
+        cv2.line(image, (crop_left, crop_top), (crop_left, rgb_height-crop_bottom), (0, 255, 0), 1)
+        cv2.line(image, (rgb_width-crop_right, crop_top), (rgb_width-crop_right, rgb_height-crop_bottom), (0, 255, 0), 1)
+        
+        image_tensor = self.to_tensor(masked_image)
         image_tensor = self.resize(image_tensor)
 
         model_input = self.pad(image_tensor)

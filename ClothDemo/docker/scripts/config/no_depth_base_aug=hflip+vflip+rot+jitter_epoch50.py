@@ -24,6 +24,12 @@ args = dict(
 	size=SIZE,
 	camera=CAMERA,
 	cuda=True,
+ 	crop=dict(
+		top=0.08,
+		bottom=0.22,
+		left=0.28,
+		right=0.32
+	),
 
 	model=dict(
 		name='fpn',

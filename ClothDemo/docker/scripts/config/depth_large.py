@@ -74,6 +74,13 @@ args = dict(
 	# autoadjust_figure_size=False,
 	groundtruth_loading = True,
 
+	crop=dict(
+		top=0.08,
+		bottom=0.22,
+		left=0.28,
+		right=0.32
+	),
+
 	# generate rotated bbox from '3sigma' or from 'minmax' or from opencv
 	generate_rot_bbox_from='3sigma', # '3sigma' or 'minmax'
 
