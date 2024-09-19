@@ -91,7 +91,7 @@ class Count:
             # add bboxes to image
             for i in range(len(predicted_bboxes.box)):
                 box = predicted_bboxes.box.cpu()[i].numpy()/scaling_factor
-                image = cv2.circle(image, (int((box[0]+box[2])/2), int((box[1]+box[3])/2)), 7, (0, 0, 255), 7)
+                image = cv2.circle(image, (int((box[0]+box[2])/2), int((box[1]+box[3])/2)),10, (0, 0, 255), 10)
                 #image = cv2.rectangle(image, (int(box[0]), int(box[1])), (int(box[2]), int(box[3])), (0, 165, 255), 2)
         
             count_by_density = round(denisty_map.sum().item())
