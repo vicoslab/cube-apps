@@ -197,10 +197,6 @@ class COTR(nn.Module):
         self.input_proj = nn.Conv2d(
             self.backbone.num_channels, emb_dim, kernel_size=1
         )
-        if self.prompt_shot:
-            from transformers import CLIPProcessor, CLIPModel
-            self.clip_model = CLIPModel.from_pretrained("openai/clip-vit-large-patch14")
-            self.clip_processor = CLIPProcessor.from_pretrained("openai/clip-vit-large-patch14")
 
         if num_encoder_layers > 0:
             self.encoder = TransformerEncoder(
@@ -243,31 +239,6 @@ class COTR(nn.Module):
                 nn.init.normal_(self.objectness)
         print("Model builded")
 
-    def clip_check_clusters(self, img, bboxes, category, img_name=None):
-        bboxes = extend_bboxes(bboxes)
-
-        C, H, W = img[0].shape
-        mask_tensor = np.zeros((H, W, C))
-        for box in bboxes.long():
-            x1, y1, x2, y2 = box
-            mask_tensor[y1:y2, x1:x2, :] = 1
-
-        img_ = img[0].cpu().permute(1, 2, 0).numpy()
-        non_zero_rows = np.any(img_ != 0, axis=(1, 2))
-        non_zero_cols = np.any(img_ != 0, axis=(0, 2))
-        top, bottom = np.where(non_zero_rows)[0][[0, -1]]
-        left, right = np.where(non_zero_cols)[0][[0, -1]]
-
-        img_ = img_ - np.min(img_)
-        img_ = img_ / np.max(img_)
-        img_ = img_ * mask_tensor
-        img_ = img_[top:bottom + 1, left:right + 1]
-        img_ = Image.fromarray(np.uint8(img_ * 255))
-        inputs = self.clip_processor(text=[category[0]], images=img_, return_tensors="pt", padding=True).to(img.device)
-        outputs = self.clip_model(**inputs)
-        logits_per_image = outputs.logits_per_image
-
-        return logits_per_image[0]
 
     def generate_bbox(self, density_map, tlrb, gt_dmap=None):
         if gt_dmap is not None:
@@ -488,16 +459,16 @@ class COTR(nn.Module):
         # LOCA low-shot counter for density map prediction
         correlation_maps, outputs_R, outputR = self.predict_density_map(backbone_features, bboxes)
 
+        if outputR.flatten(1).sum(dim=1).sum() > 100:
+            return outputR, None, None, None
+
         if self.det_train:
             tblr = self.box_predictor(self.upscale(backbone_features), self.upscale(correlation_maps))
             location = self.compute_location(tblr)
             return outputs_R[-1], outputs_R[:-1], tblr, location
 
-        if backbone_features.shape[2] * backbone_features.shape[3] > 8000:
-            self.box_predictor = self.box_predictor.cpu()
-            tblr = self.box_predictor(self.upscale(backbone_features.cpu()), self.upscale(correlation_maps.cpu()))
-        else:
-            tblr = self.box_predictor(self.upscale(backbone_features), self.upscale(correlation_maps))
+
+        tblr = self.box_predictor(self.upscale(backbone_features), self.upscale(correlation_maps))
 
         generated_bboxes = self.generate_bbox(outputR, tblr)[0]
         bboxes_p = generated_bboxes.box
@@ -534,52 +505,16 @@ class COTR(nn.Module):
         feat_pairs = self.feat_comp(feat_vectors.reshape(bs * bboxes_.shape[0], 3584, 3, 3)) \
             .reshape(bs, bboxes_.shape[0], -1).permute(1, 0, 2)
 
-        # Speed up, nothing changes
-        if len(feat_pairs) > 500:
+        # Speed up, for demo cube
+        if len(feat_pairs) > 100:
             return outputR, [], tblr, generated_bboxes
-
-        # can be used to reduce memory consumption
-        # dst_mtx = np.zeros((feat_pairs.shape[0], feat_pairs.shape[0]))
-        # for f1, f2 in itertools.combinations(zip(feat_pairs, [i for i in range(feat_pairs.shape[0])]), 2):
-        #     s=self.cosine_sim(f1[0], f2[0])
-        #     dst_mtx[f1[1]][f2[1]] = s
-        #     dst_mtx[f1[1]][f1[1]] = 1
-        #     dst_mtx[f2[1]][f1[1]] = s
 
         feat_pairs = feat_pairs[:, 0]
         dst_mtx = self.cosine_sim(feat_pairs[None, :], feat_pairs[:, None]).cpu().numpy()
         dst_mtx[dst_mtx < 0] = 0
 
-        if self.zero_shot and self.prompt_shot:
-            preds = generated_bboxes
 
-            k, _, _ = self.eigenDecomposition(dst_mtx)
-            if len(k) > 1 or (len(k) > 1 and k[0] > 1):
-                n_clusters_ = max(k)
-                spectral = SpectralClustering(n_clusters=n_clusters_, affinity='precomputed')
-                labels = spectral.fit_predict(dst_mtx)
-
-                box_labels = labels
-                labels = box_labels[box_labels >= 0]
-                labels, counts = np.unique(np.array(labels), return_counts=True)
-                correct_clusters = []
-                probs = []
-                for lab in labels:
-                    mask = np.in1d(box_labels, lab).reshape(box_labels.shape)
-                    probs.append(self.clip_check_clusters(x_img, bboxes_p[mask], classes, img_name=name).item())
-                    correct_clusters.append(lab)
-                thresh = max(probs) * 0.85
-                correct = np.array(probs) > thresh
-                correct_clusters = np.array(correct_clusters)[correct]
-                mask = np.in1d(box_labels, correct_clusters).reshape(box_labels.shape)
-                preds = generated_bboxes[mask]
-
-                if len(preds) != len(generated_bboxes):
-                    outputR[0][0] = mask_density(outputR[0], preds)
-
-            return outputR, [], tblr, preds
-
-        elif self.zero_shot and not self.prompt_shot:
+        if self.zero_shot:
             k, _, _ = self.eigenDecomposition(dst_mtx)
             preds = generated_bboxes
             if len(k) > 1 or (len(k) > 1 and k[0] > 1):

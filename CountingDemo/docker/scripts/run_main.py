@@ -86,7 +86,8 @@ class Count:
             denisty_map, _, _, predicted_bboxes = self.model(image_t, bboxes)
 
             #sure_bg = find_background_mask(image_t)
-            
+            if predicted_bboxes is None:
+                return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
             # add bboxes to image
             for i in range(len(predicted_bboxes.box)):
