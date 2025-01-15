@@ -190,7 +190,7 @@ class COTR(nn.Module):
         self.upscale = nn.Upsample(scale_factor=(8, 8))
         self.cosine_sim = nn.CosineSimilarity(dim=-1)
         self.backbone = Backbone(
-            backbone_name, pretrained=True, dilation=False, reduction=reduction,
+            backbone_name, pretrained=False, dilation=False, reduction=reduction,
             swav=swav_backbone, requires_grad=train_backbone
         )
         self.cos_loss = nn.CosineEmbeddingLoss()
