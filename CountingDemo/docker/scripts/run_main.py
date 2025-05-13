@@ -29,10 +29,10 @@ def resize_and_pad(img, bboxes=None, size=512.0):
 
     #_, W, H = img.shape
     if bboxes is not None:
-        bboxes = bboxes * torch.tensor([scaling_factor, scaling_factor, scaling_factor, scaling_factor])
+        bboxes = bboxes * torch.tensor([scaling_factor, scaling_factor, scaling_factor, scaling_factor], device=bboxes.device)
         return padded_img, bboxes, scaling_factor
     else:
-        return padded_img, scaling_factor
+        return padded_img, None, scaling_factor
 
 
 def find_background_mask(image):
@@ -73,15 +73,20 @@ class Count:
         model.eval()
         self.model = model
 
-    def predict(self, image):
+    def predict(self, image, bboxes=None):
         with torch.no_grad():
+            if bboxes is not None:
+                bboxes = torch.tensor(bboxes, dtype=torch.float32, device=self.device)
+                self.model.num_objects = bboxes.shape[1]
             # transform image
             image_t = T.ToTensor()(image).unsqueeze(0)
             image_t = T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])(image_t)
-            image_t, scaling_factor = resize_and_pad(image_t)
             image_t = image_t.to(self.device)
-            bboxes = torch.zeros((1, 3, 4), dtype=torch.float32, device=self.device)
+            image_t, bboxes, scaling_factor = resize_and_pad(image_t, bboxes=bboxes)
+            if bboxes is None:
+                bboxes = torch.zeros((1, self.model.num_objects, 4), dtype=torch.float32, device=self.device)
 
+            # print("Bboxes", bboxes)
             # predict bboxes and density maps
             denisty_map, _, _, predicted_bboxes = self.model(image_t, bboxes)
 

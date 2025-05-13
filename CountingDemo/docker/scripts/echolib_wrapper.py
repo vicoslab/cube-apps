@@ -1,5 +1,6 @@
 import time
 import cv2
+import numpy as np
 
 import echolib
 from echolib.camera import Frame, FramePublisher, FrameSubscriber
@@ -27,6 +28,9 @@ class EcholibWrapper:
         
         self.camera_stream    = FrameSubscriber(self.client, "camera_stream_0", self._camera_stream_callback)
         self.docker_frame_out = FramePublisher(self.client, "docker_demo_output")
+
+        self.bounding_boxes = FrameSubscriber(self.client, "counting_bboxes", self._bboxes_callback)
+        self.bounding_boxes_data = np.array([[[0,0,0,0]]], dtype=np.float32)
 
         self.detection_method = detection_method
 
@@ -58,6 +62,9 @@ class EcholibWrapper:
         self.n_frames += 1
 
         print("Docker demo: reading camera stream {}".format(self.n_frames))
+        
+    def _bboxes_callback(self, message):
+        self.bounding_boxes_data = message.image
 
     def process(self):
         
@@ -71,7 +78,8 @@ class EcholibWrapper:
                 self.frame_in_new = False
             
                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-                frame = self.detection_method.predict(frame)
+                bboxes = self.bounding_boxes_data.view(np.float32)
+                frame = self.detection_method.predict(frame, bboxes)
 
             if frame is not None:
 

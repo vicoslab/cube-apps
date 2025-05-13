@@ -4,12 +4,12 @@ from echolib.camera import FramePublisher, Frame
 def get_scene(parameters):
     
     parameters.state.detection = 0
-    parameters.state.counting_publisher = FramePublisher(parameters.state.echolib_handler.client, "docker_counting_demo_input")
+    parameters.state.counting_publisher = FramePublisher(parameters.state.echolib_handler.client, "counting_bboxes")
     parameters.state.counting_drag_start_pos = None
     parameters.state.counting_drag_current_pos = None
     parameters.state.counting_drag_stopped_time = None
     parameters.state.counting_exemplars = []
-    parameters.state.counting_last_time = time.monotonic()
+    parameters.state.counting_old_length = 0
 
     vicos_gray = [85.0/255.0, 85.0/255.0, 85.0/255.0, 0.75]
     vicos_red  = [226.0/255, 61.0/255, 40.0/255.0, 0.75]
@@ -21,23 +21,33 @@ def get_scene(parameters):
         if not echolib_handler.docker_channel_ready:
             return None
         
-        image = echolib_handler.get_camera_stream()
+        image = echolib_handler.get_image() if state.detection == 1 else echolib_handler.get_camera_stream()
         if image is not None:
+            height, width, _ = image.shape
             bboxes = state.counting_exemplars.copy()
+            
+            if state.counting_old_length != len(bboxes):
+                if len(bboxes) > 0:
+                    bboxes_abs = np.array(bboxes) * np.array([width, height])
+                    bboxes_view = np.array(bboxes_abs
+                                        .astype(np.float32)
+                                        .reshape((1,-1,4))
+                                        .view(np.uint8), dtype=np.uint8)
+                else:
+                    bboxes_view = np.array([[[0,0,0,0]]], dtype=np.uint8)                    
+
+                state.counting_publisher.send(Frame(image=bboxes_view))
+                state.counting_old_length = len(bboxes)
+
+            # Its important we don't send this one yet, as it is not finished
             if state.counting_drag_start_pos is not None:
                 bboxes.append((state.counting_drag_start_pos, state.counting_drag_current_pos))
             for (x1,y1), (x2,y2) in bboxes:
-                pt1 = int(x1 * image.shape[1]), int(y1 * image.shape[0])
-                pt2 = int(x2 * image.shape[1]), int(y2 * image.shape[0])
+                pt1 = int(x1 * width), int(y1 * height)
+                pt2 = int(x2 * width), int(y2 * height)
                 cv2.rectangle(image, pt1, pt2, (255, 255, 0), 4)
-            # t = time.monotonic()
-            # if t - state.counting_last_time > 0.5:
-            #     state.counting_last_time = t
-            #     state.counting_publisher.send(Frame(image = image))
-            #     print("sent frame", len(bboxes))
-            # echolib_handler.camera_stream_image_new = False
         
-        return echolib_handler.get_image() if state.detection == 1 else image
+        return image
 
     def toggle_detection(button: Button, gui: Gui, state):
 
