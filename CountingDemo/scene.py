@@ -114,7 +114,7 @@ def get_scene(parameters):
             else:
                 x1, y1 = state.counting_drag_start_pos
                 # Ignore small drags
-                if (x1 - x)**2 + (y1 - y)**2 > 0.005:
+                if (x1 - x)**2 + (y1 - y)**2 > 0.001:
                     state.counting_exemplars.append((state.counting_drag_start_pos, (x, y)))
                 state.counting_drag_start_pos = None
 

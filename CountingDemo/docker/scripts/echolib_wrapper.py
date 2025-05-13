@@ -15,7 +15,7 @@ class Command:
 
 class EcholibWrapper:
     
-    def __init__(self, detection_method):
+    def __init__(self, method, args):
 
         self.loop   = echolib.IOLoop()
         self.client = echolib.Client()
@@ -32,7 +32,11 @@ class EcholibWrapper:
         self.bounding_boxes = FrameSubscriber(self.client, "counting_bboxes", self._bboxes_callback)
         self.bounding_boxes_data = np.array([[[0,0,0,0]]], dtype=np.float32)
 
-        self.detection_method = detection_method
+        self.detection_method_0shot = method(args)
+        # can be used for dynamic number if objectness is off
+        args.zero_shot = False
+        args.model_name = "DAVE_3_shot"
+        self.detection_method_3shot = method(args)
 
         self.frame_in    = None
         self.frame_in_new = False
@@ -79,7 +83,10 @@ class EcholibWrapper:
             
                 frame = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
                 bboxes = self.bounding_boxes_data.view(np.float32)
-                frame = self.detection_method.predict(frame, bboxes)
+                if bboxes.shape[1] == 1 and np.abs(bboxes).sum() == 0:
+                    frame = self.detection_method_0shot.predict(frame)
+                else:
+                    frame = self.detection_method_3shot.predict(frame, bboxes)
 
             if frame is not None:
 

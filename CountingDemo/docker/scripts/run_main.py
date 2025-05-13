@@ -111,11 +111,12 @@ class Count:
 
 
 class FolderProcessing:
-    def __init__(self, method, folder):
+    def __init__(self, method, args):
+        folder = args.model_path
         self.img_list = glob.iglob(os.path.join(folder, '*.png'))
         self.img_list = sorted(self.img_list)
         self.folder = folder
-        self.method = method
+        self.method = method(args)
 
     def run(self):
         print(self.img_list)
@@ -135,11 +136,9 @@ class FolderProcessing:
 def main(args):
     if args.image_folder is None:
         from echolib_wrapper import EcholibWrapper
-        processer = lambda d: EcholibWrapper(d)
+        p = EcholibWrapper(Count, args)
     else:
-        processer = lambda d: FolderProcessing(d, args.model_path)
-
-    p = processer(Count(args))
+        p = FolderProcessing(Count, args)
 
     try:
         p.run()
