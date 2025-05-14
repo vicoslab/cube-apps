@@ -4,4 +4,5 @@
     <dockerId>cloth-demo:latest</dockerId>
     <highlight>Zaznavanje vogalov</highlight>
     <video>krpe.mp4</video>
+    <icon>../demo-default-icon.svg</icon>
 </cfg>

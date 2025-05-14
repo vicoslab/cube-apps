@@ -4,4 +4,5 @@
     <dockerId>ploscice-demo:ubuntu18.04-cuda11.2.0-cudnn8</dockerId>
     <highlight>Zaznavanje napak</highlight>
     <video>demo.mp4</video>
+    <icon>../demo-default-icon.svg</icon>
 </cfg>
