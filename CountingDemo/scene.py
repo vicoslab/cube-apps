@@ -108,6 +108,9 @@ def get_scene(parameters):
                 return
             x = (x - left) / (right - left)
             y = 1 - (y - bottom) / (top - bottom)
+            if y > 0.9 or y < 0.1: # Dead zone calibration menu triggers/bottom buttons
+                state.counting_drag_start_pos = None
+                return
             
             if is_pressed:
                 state.counting_drag_start_pos = state.counting_drag_current_pos = (x, y)
