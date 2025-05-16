@@ -26,7 +26,12 @@ CROP_PIXEL = 5              # ignore 5px border when object is cropped
 MIN_BOARD_AREA = 200*200    # object should be at least 200x200 px in area
 
 THRESHOLD = 0.50
-TEXT_THICKNES = 7
+TEXT_THICKNES = 3
+
+FONT_SCALE = 2
+LABEL_OFFSET_X = -100
+LABEL_OFFSET_Y = -20
+LABEL_OPACITY = 0.65
 
 imagenet_mean = np.array([0.485, 0.456, 0.406])
 imagenet_std = np.array([0.229, 0.224, 0.225])
@@ -200,15 +205,18 @@ class SegDecNetModel:
 
                 image_score = pred.item()
 
+                overlay = np.zeros_like(drawn_contours)
                 if image_score < THRESHOLD:
                     c = [0, 255, 0]
-                    drawn_contours = cv2.drawContours(drawn_contours, contours, 0, c, 20)
-                    drawn_contours = cv2.putText(drawn_contours, f"OK ({image_score * 100:.1f})", (tx-220, ty+500), cv2.FONT_HERSHEY_TRIPLEX, 4, c, TEXT_THICKNES)
+                    cv2.drawContours(overlay, contours, 0, c, 20)
+                    cv2.putText(overlay, f"OK ({image_score * 100:.1f})", (tx+LABEL_OFFSET_X, ty+LABEL_OFFSET_Y), cv2.FONT_HERSHEY_TRIPLEX, FONT_SCALE, c, TEXT_THICKNES)
                 else:
                     c = [0, 0, 255]
-                    drawn_contours = cv2.drawContours(drawn_contours, contours, 0, c, 20)
-                    drawn_contours = cv2.putText(drawn_contours, f"X ({image_score * 100:.1f})", (tx-220, ty+500), cv2.FONT_HERSHEY_TRIPLEX, 4, c, TEXT_THICKNES)
+                    cv2.drawContours(overlay, contours, 0, c, 20)
+                    cv2.putText(overlay, f"X ({image_score * 100:.1f})", (tx+LABEL_OFFSET_X, ty+LABEL_OFFSET_Y), cv2.FONT_HERSHEY_TRIPLEX, FONT_SCALE, c, TEXT_THICKNES)
                 
+                mask = overlay.astype(bool)
+                drawn_contours[mask] = cv2.addWeighted(overlay, LABEL_OPACITY, drawn_contours, 1 - LABEL_OPACITY, 0)[mask]
                 drawn_true = True
             
             if not drawn_true:
