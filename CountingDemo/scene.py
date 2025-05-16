@@ -114,11 +114,15 @@ def get_scene(parameters):
             
             if is_pressed:
                 state.counting_drag_start_pos = state.counting_drag_current_pos = (x, y)
-            else:
-                x1, y1 = state.counting_drag_start_pos
+            elif state.counting_drag_start_pos is not None:
+                x2, y2 = state.counting_drag_start_pos
                 # Ignore small drags
-                if (x1 - x)**2 + (y1 - y)**2 > 0.001:
-                    state.counting_exemplars.append((state.counting_drag_start_pos, (x, y)))
+                if (x2 - x)**2 + (y2 - y)**2 > 0.001:
+                    if x > x2:
+                        x, x2 = x2, x
+                    if y > y2:
+                        y, y2 = y2, y
+                    state.counting_exemplars.append(((x, y), (x2, y2)))
                 state.counting_drag_start_pos = None
 
         if state.counting_drag_start_pos is not None:
