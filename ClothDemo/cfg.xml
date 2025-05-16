@@ -2,7 +2,8 @@
 <cfg>
     <demoId>CD</demoId>
     <dockerId>cloth-demo:latest</dockerId>
-    <highlight>Zaznavanje vogalov</highlight>
+    <highlight-sl>Zaznavanje vogalov</highlight-sl>
+    <highlight-en>Corner detection</highlight-en>
     <video>krpe.mp4</video>
     <icon>../demo-default-icon.svg</icon>
 </cfg>

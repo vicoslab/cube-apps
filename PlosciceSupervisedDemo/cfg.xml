@@ -2,7 +2,8 @@
 <cfg>
     <demoId>PlSupD</demoId>
     <dockerId>ploscice-supervised-demo:ubuntu18.04-cuda11.2.0-cudnn8</dockerId>
-    <highlight>Zaznavanje napak</highlight>
+    <highlight-sl>Zaznavanje napak</highlight-sl>
+    <highlight-en>Defect detection</highlight-en>
     <video>demo.mp4</video>
     <icon>icon.svg</icon>
 </cfg>
