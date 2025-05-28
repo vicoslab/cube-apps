@@ -106,7 +106,7 @@ class Count:
 
             image = cv2.putText(image, "Stevilo detektiranih objektov je {}".format(len(predicted_bboxes.box)), (300, image.shape[0]-300), fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=FONT_SCALE, color=FONT_COLOR, thickness=FONT_THICKNESS)
             
-            
+        torch.cuda.empty_cache()
         return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
 
