@@ -4,6 +4,8 @@
     <dockerId>deske-demo:ubuntu18.04-cuda11.2.0-cudnn8</dockerId>
     <highlight-sl>Razpoznava desk</highlight-sl>
     <highlight-en>Wood distinction</highlight-en>
+    <vramMin>1300</vramMin>
+    <vramMax>5000</vramMax>
     <video>demo.mp4</video>
     <icon>icon.svg</icon>
 </cfg>

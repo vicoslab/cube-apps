@@ -8,7 +8,7 @@ docker build https://github.com/skokec/detectron-traffic-signs.git#villard:docke
                     --build-arg UBUNTU_VERSION=16.04
 
 # ResNet50
-docker build vicos-demo -t tsr-vicos-demo:ubuntu16.04-cuda11.1.1-cudnn8-resnet50 \
+docker build . -t tsr-vicos-demo:ubuntu16.04-cuda11.1.1-cudnn8-resnet50 \
                         --build-arg UBUNTU_VERSION=16.04 \
                         --build-arg DETECTRON_IMAGE_RUNTIME=detectron-traffic-signs:ubuntu16.04-cuda11.1.1-cudnn8 \
                         --build-arg BACKBONE=resnet50

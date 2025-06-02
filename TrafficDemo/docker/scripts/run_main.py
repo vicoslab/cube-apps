@@ -59,6 +59,12 @@ class TSRDemo:
 
         if cls_boxes is not None:
           im = self.visualizeResults(im, cls_boxes)
+        
+        # Free up vram
+        for blob in workspace.Blobs():
+            if blob.endswith("_b") or blob.endswith("_w") or blob.endswith("_s"):
+                continue
+            workspace.FeedBlob(blob, np.array([]))
 
         return cv2.cvtColor(im, cv2.COLOR_BGR2RGB)
 

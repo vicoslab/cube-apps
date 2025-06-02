@@ -180,7 +180,7 @@ class PModel:
 
                 image_t = T.Compose([T.Resize(RESIZE, Image.ANTIALIAS), T.ToTensor(),
                                      T.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])])(Image.fromarray(cropped_part)).unsqueeze(0).to(DEVICE)
-                predictions = self.model(image_t)
+                predictions = self.model(image_t).detach()
                 predicted = predictions.argmax().item()
 
                 print(f"Predicted: {predicted}")
@@ -198,7 +198,7 @@ class PModel:
             print(e)
 
             cv2.putText(drawn_contours, f"X", (500, 500), cv2.FONT_HERSHEY_TRIPLEX, 5, [0, 0, 255], 5)
-
+        torch.cuda.empty_cache()
         return cv2.cvtColor(drawn_contours, cv2.COLOR_BGR2RGB)
 
 

@@ -4,6 +4,9 @@
     <dockerId>poco-vicos-demo:ubuntu18.04-cuda11.2.0-cudnn8</dockerId>
     <highlight-sl>Štetje polipov</highlight-sl>
     <highlight-en>Polyp counting</highlight-en>
+    <!-- Because it uses tensorflow, you cannot easily free vram after inference -->
+    <vramMin>8400</vramMin>
+    <vramMax>8400</vramMax>
     <video>demo.mp4</video>
     <icon>icon.svg</icon>
 </cfg>

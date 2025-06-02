@@ -200,8 +200,8 @@ class SegDecNetModel:
                 image_t = T.Compose([T.Resize(RESIZE, Image.ANTIALIAS), T.ToTensor()])(Image.fromarray(final_cropped)).unsqueeze(0).to(DEVICE)
 
                 pred,pred_mask = self.model(image_t)
-                pred = torch.sigmoid(pred)
-                pred_mask = torch.sigmoid(pred_mask)
+                pred = torch.sigmoid(pred).detach()
+                pred_mask = torch.sigmoid(pred_mask).detach()
 
                 image_score = pred.item()
 
@@ -229,6 +229,7 @@ class SegDecNetModel:
 
             cv2.putText(drawn_contours, f"X", (500, 500), cv2.FONT_HERSHEY_TRIPLEX, 5, [0, 0, 255], 5)
 
+        torch.cuda.empty_cache()
         return cv2.cvtColor(drawn_contours, cv2.COLOR_BGR2RGB)
 
 

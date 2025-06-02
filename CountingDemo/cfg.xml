@@ -4,6 +4,8 @@
     <dockerId>counting-demo:ubuntu20.04-cuda11.8.0-cudnn8</dockerId>
     <highlight-sl>Štetje objektov</highlight-sl>
     <highlight-en>Object counting</highlight-en>
+    <vramMin>850</vramMin><!--~700 after clearing cache after inference-->
+    <vramMax>9250</vramMax>
     <video>demo.mp4</video>
     <icon>icon.svg</icon>
 </cfg>

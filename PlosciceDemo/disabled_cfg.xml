@@ -2,7 +2,11 @@
 <cfg>
     <demoId>PlD</demoId>
     <dockerId>ploscice-demo:ubuntu18.04-cuda11.2.0-cudnn8</dockerId>
-    <highlight>Zaznavanje napak</highlight>
+    <highlight-sl>Zaznavanje napak</highlight-sl>
+    <highlight-en>Defect detection</highlight-en>
+    <!-- Copied vram values from supervised demo; might need to update these -->
+    <vramMin>1250</vramMin>
+    <vramMax>1650</vramMax>
     <video>demo.mp4</video>
     <icon>../demo-default-icon.svg</icon>
 </cfg>
