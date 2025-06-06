@@ -1,11 +1,9 @@
 from opengl_gui.gui_components import *
+from gui_components import Colours
 
 def get_scene(parameters):
     
-    parameters.state.traffic_detection = 0
-
-    vicos_gray = [85.0/255.0, 85.0/255.0, 85.0/255.0, 0.75]
-    vicos_red  = [226.0/255, 61.0/255, 40.0/255.0, 0.75]
+    parameters.state.traffic_detection = 1
 
     def get_docker_texture(gui: Gui, state):
 
@@ -14,19 +12,24 @@ def get_scene(parameters):
         if not echolib_handler.docker_channel_ready:
             return None
         
+        if state.demo_start:
+            state.detection = 1
+            state.echolib_handler.append_command((state.echolib_handler.docker_channel_out, 1))
+            state.demo_start = False
+
         return echolib_handler.get_image() if state.traffic_detection == 1 else echolib_handler.get_camera_stream()
 
     def toggle_detection(button: Button, gui: Gui, state):
 
         if state.echolib_handler.docker_channel_out is not None:
 
-            toggle = button.mouse_click_count % 2
+            toggle = (button.mouse_click_count + 1) % 2
             state.traffic_detection = toggle
 
             if toggle == 1:
-                button.set_colour(colour = vicos_gray)
+                button.set_colour(colour = Colours.VICOS_GRAY)
             else:
-                button.set_colour(colour = vicos_red)
+                button.set_colour(colour = Colours.VICOS_RED)
 
             state.echolib_handler.append_command((state.echolib_handler.docker_channel_out, toggle))
 
@@ -35,7 +38,7 @@ def get_scene(parameters):
     button_detection = Button(
         position = [0.44, 0.92],
         scale    = [0.10*button_scale, 0.03*button_scale],
-        colour   = vicos_red,
+        colour   = Colours.VICOS_GRAY,
         on_click = toggle_detection,
         id       = "demo_traffic_toggle_button")
 
