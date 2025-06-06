@@ -5,6 +5,13 @@ import echolib
 from echolib.camera import FramePublisher, Frame
 from gui_components import Colours, TouchContainer
 
+class Command:
+    DISABLE = 0
+    ENABLE = 1
+
+    CAMERA_STREAM_DEFAULT = 10
+    CAMERA_STREAM_KINECT_AZURE = 11
+
 def get_scene(parameters):
 
     state = parameters.state
@@ -117,7 +124,53 @@ def get_scene(parameters):
 
     button_exemplars_text.depends_on(element = button_exemplars)
 
-    return { "get_docker_texture": get_docker_texture, "elements": [container] }
+    cam_selector_scale = button_scale
+    cam_selector_pane = Container(
+        position = [0.87, 0.877],
+        scale    = [0.06*cam_selector_scale, 0.03*cam_selector_scale*2],
+        colour   = [1.0, 1.0, 1.0, 0.1],
+        id       = "demo_cloth_cam_pane"
+    )
+
+    def switch_camera(button: Button, gui: Gui, state, camera_stream: int):
+        if state.echolib_handler.docker_channel_out is not None:
+            state.echolib_handler.append_command((state.echolib_handler.docker_channel_out, camera_stream))
+
+        for b in cam_selector_pane.dependent_components:
+            b.set_colour(Colours.VICOS_RED)
+
+        button.set_colour(Colours.VICOS_GRAY)
+
+    def add_camera_select_button(button_pane, id, callback, text, position, enabled=True):
+        cam_selector = Button(
+            position = [0.02, position],
+            scale    = [0.08*cam_selector_scale, 0.03*cam_selector_scale],
+            colour   = Colours.VICOS_GRAY if enabled else Colours.VICOS_RED,
+            on_click = callback,
+            id       = "demo_counting_cam_{}".format(id))
+
+        cam_selector_text = TextField(
+            colour   = [1.0, 1.0, 1.0, 1.0],
+            position = [0.25, 0.5,],
+            text_scale = 0.5,
+            aspect_ratio = parameters.aspect,
+            id = "demo_counting_cam_{}_text".format(id))
+
+        cam_selector_text.set_text(font = parameters.font, text = text)
+        cam_selector_text.center_x()
+        cam_selector_text.center_y()
+
+        cam_selector_text.depends_on(element = cam_selector)
+        cam_selector.center_x()
+        cam_selector.depends_on(element = button_pane)
+
+        return cam_selector
+
+    from functools import partial
+    add_camera_select_button(cam_selector_pane, 1, partial(switch_camera,camera_stream=Command.CAMERA_STREAM_DEFAULT), "Glavna kamera", position=0, enabled=True)
+    add_camera_select_button(cam_selector_pane, 2, partial(switch_camera,camera_stream=Command.CAMERA_STREAM_KINECT_AZURE), "Kinect Azure", position=0.5, enabled=False)
+
+    return { "get_docker_texture": get_docker_texture, "elements": [container, cam_selector_pane] }
 
 def get_docker_texture(gui: Gui, state):
     # print('docker texture', state.counting_count)
@@ -137,10 +190,10 @@ def get_docker_texture(gui: Gui, state):
     
     if state.demo_start:
         state.detection = 1
-        state.echolib_handler.append_command((state.echolib_handler.docker_channel_out, 1))
+        state.echolib_handler.append_command((state.echolib_handler.docker_channel_out, Command.ENABLE))
         state.demo_start = False
     
-    image = echolib_handler.get_image() if state.detection == 1 else echolib_handler.get_camera_stream()
+    image = echolib_handler.get_image()
     if image is None: return None
     # Watch out: if you're trying to increase responsiveness, image.copy() seems to cause some trouble
     
@@ -182,7 +235,7 @@ def toggle_detection(button: Button, gui: Gui, state):
         else:
             button.set_colour(colour = Colours.VICOS_RED)
 
-        state.echolib_handler.append_command((state.echolib_handler.docker_channel_out, toggle))
+        state.echolib_handler.append_command((state.echolib_handler.docker_channel_out, Command.ENABLE if toggle == 1 else Command.DISABLE))
 
 
 def click_handler(self, is_pressed, x, y, state):

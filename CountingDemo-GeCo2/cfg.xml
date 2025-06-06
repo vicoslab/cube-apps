@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <cfg>
     <demoId>CD-GeCo</demoId>
-    <dockerId>counting-geco2:latest</dockerId>
+    <dockerId>counting-geco2:cameras</dockerId>
     <highlight-sl>Štetje objektov: GeCo2</highlight-sl>
     <highlight-en>Object counting: GeCo2</highlight-en>
     <vramMin>850</vramMin>
-    <vramMax>2750</vramMax>
+    <vramMax>5000</vramMax>
     <!-- Uncomment this if you want to always delete container when deselecting. 
         This is useful when you want to rebuild its docker image and 
         test it out without restarting the whole UI -->
