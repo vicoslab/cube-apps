@@ -6,6 +6,10 @@
     <highlight-en>Corner detection</highlight-en>
     <vramMin>1000</vramMin>
     <vramMax>9000</vramMax>
+    <!-- Uncomment this if you want to always delete container when deselecting. 
+        This is useful when you want to rebuild its docker image and 
+        test it out without restarting the whole UI -->
+    <!-- <nopause/> -->
     <video>krpe.mp4</video>
     <icon>../demo-default-icon.svg</icon>
 </cfg>

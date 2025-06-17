@@ -6,6 +6,10 @@
     <highlight-en>Road sign recognition</highlight-en>
     <vramMin>1100</vramMin>
     <vramMax>3000</vramMax>
+    <!-- Uncomment this if you want to always delete container when deselecting. 
+        This is useful when you want to rebuild its docker image and 
+        test it out without restarting the whole UI -->
+    <!-- <nopause/> -->
     <video>traffic.mp4</video>
     <icon>icon.svg</icon>
 </cfg>

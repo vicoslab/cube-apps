@@ -92,6 +92,7 @@ class Count:
 
             #sure_bg = find_background_mask(image_t)
             if predicted_bboxes is None:
+                torch.cuda.empty_cache()
                 return cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
 
             # add bboxes to image

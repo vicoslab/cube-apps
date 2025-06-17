@@ -6,6 +6,10 @@
     <highlight-en>Defect detection</highlight-en>
     <vramMin>1250</vramMin>
     <vramMax>1650</vramMax>
+    <!-- Uncomment this if you want to always delete container when deselecting. 
+        This is useful when you want to rebuild its docker image and 
+        test it out without restarting the whole UI -->
+    <!-- <nopause/> -->
     <video>demo.mp4</video>
     <icon>icon.svg</icon>
 </cfg>
