@@ -1,9 +1,5 @@
 from opengl_gui.gui_components import *
-from gui_components import SettableRangeSlider
-
-import echolib
-from echolib.camera import FramePublisher, Frame
-from gui_components import Colours, TouchContainer
+from gui_components import SettableRangeSlider, Colours, TouchContainer
 
 class Command:
     DISABLE = 0
@@ -11,13 +7,14 @@ class Command:
 
     CAMERA_STREAM_DEFAULT = 10
     CAMERA_STREAM_KINECT_AZURE = 11
+    CAMERA_STREAM_AXIS_PTZ = 12
 
 def get_scene(parameters):
 
     state = parameters.state
+    echo = state.echolib_handler
+
     state.detection = 1
-    state.counting_publisher = FramePublisher(state.echolib_handler.client, "counting_bboxes")
-    state.counting_publisher_threshold = echolib.Publisher(state.echolib_handler.client, "counting_threshold", "float")
     state.counting_drag_start_pos = None
     state.counting_drag_current_pos = None
     state.counting_drag_stopped_time = None
@@ -25,8 +22,6 @@ def get_scene(parameters):
     state.counting_old_length = 0
     state.counting_threshold = 0.5 # 0.4 - 0.6 is reasonable (1 == max detection on image)
     state.counting_count = 0
-    state.counting_thresh_publish_buffer = None
-    state.counting_thresh_publish_time = time.time()
 
     button_scale = 1.4
     button_detection = Button(
@@ -70,6 +65,7 @@ def get_scene(parameters):
         aspect_ratio = parameters.aspect,
         range_bottom=0,
         range_top=1,
+        on_select = slider_threshold_on_select,
         id = "range_slider_threshold")
     slider_threshold_text.depends_on(slider_threshold)
     slider_threshold_text.set_text(font=parameters.font, text=f"Threshold: {slider_threshold.selected_value:.2f}")
@@ -81,23 +77,9 @@ def get_scene(parameters):
             slider_threshold.set_value(value)
             slider_threshold_text.set_text(font=parameters.font, text=f"Threshold: {slider_threshold.selected_value:.2f}")
                 
-            writer = echolib.MessageWriter()
-            writer.writeFloat(value)
-            state.counting_publisher_threshold.send(writer)
+            echo.append_command((echo.demo_counting_threshold, str(value)))
     slider_threshold.on_value_update  = lambda slider, state: \
         slider_threshold_text.set_text(font=parameters.font, text=f"Threshold: {slider_threshold.selected_value:.2f}")
-
-    def slider_threshold_on_select(slider: RangeSlider, state):
-        # Sending too many updates may cause echolib to die,
-        # so we just save to state and debounce in get_docker_texture
-        # Note: its still not 100% reliable
-        state.counting_thresh_publish_buffer = slider.selected_value
-        if state.active_demo is not None:
-            section = f"demos.{state.active_demo}"
-            if section not in state.config:
-                state.config[section] = {}
-            state.config[section]["threshold"] = str(slider.selected_value)
-    slider_threshold.on_select = slider_threshold_on_select
     
     container = TouchContainer(
         position = [0,0],
@@ -128,24 +110,27 @@ def get_scene(parameters):
     cam_selector_pane = Container(
         position = [0.87, 0.877],
         scale    = [0.06*cam_selector_scale, 0.03*cam_selector_scale*2],
-        colour   = [1.0, 1.0, 1.0, 0.1],
+        colour   = [0,0,0,0],
         id       = "demo_cloth_cam_pane"
     )
 
-    def switch_camera(button: Button, gui: Gui, state, camera_stream: int):
-        if state.echolib_handler.docker_channel_out is not None:
-            state.echolib_handler.append_command((state.echolib_handler.docker_channel_out, camera_stream))
+    def get_switch_handler(camera_stream: int):
+        def switch_camera(button: Button, gui: Gui, state):
+            if state.echolib_handler.docker_channel_out is not None:
+                state.echolib_handler.append_command((state.echolib_handler.docker_channel_out, camera_stream))
 
-        for b in cam_selector_pane.dependent_components:
-            b.set_colour(Colours.VICOS_RED)
+            for b in cam_selector_pane.dependent_components:
+                b.set_colour(Colours.VICOS_RED)
 
-        button.set_colour(Colours.VICOS_GRAY)
+            button.set_colour(Colours.VICOS_GRAY)
+        return switch_camera
 
-    def add_camera_select_button(button_pane, id, callback, text, position, enabled=True):
+    def add_camera_select_button(button_pane, id, callback, text, enabled=True):
         cam_selector = Button(
-            position = [0.02, position],
+            position = [0.02, 0],
             scale    = [0.08*cam_selector_scale, 0.03*cam_selector_scale],
-            colour   = Colours.VICOS_GRAY if enabled else Colours.VICOS_RED,
+            offset   = [0, id*0.06*cam_selector_scale],
+            colour   = Colours.VICOS_GRAY_NON_TRANSPARENT if enabled else Colours.VICOS_RED,
             on_click = callback,
             id       = "demo_counting_cam_{}".format(id))
 
@@ -166,33 +151,24 @@ def get_scene(parameters):
 
         return cam_selector
 
-    from functools import partial
-    add_camera_select_button(cam_selector_pane, 1, partial(switch_camera,camera_stream=Command.CAMERA_STREAM_DEFAULT), "Glavna kamera", position=0, enabled=True)
-    add_camera_select_button(cam_selector_pane, 2, partial(switch_camera,camera_stream=Command.CAMERA_STREAM_KINECT_AZURE), "Kinect Azure", position=0.5, enabled=False)
+    add_camera_select_button(cam_selector_pane, 0, get_switch_handler(Command.CAMERA_STREAM_DEFAULT), "Glavna kamera", enabled=True)
+    add_camera_select_button(cam_selector_pane, 1, get_switch_handler(Command.CAMERA_STREAM_KINECT_AZURE), "Kinect Azure", enabled=False)
+    add_camera_select_button(cam_selector_pane, 2, get_switch_handler(Command.CAMERA_STREAM_AXIS_PTZ), "Axis PTZ", enabled=False)
 
     return { "get_docker_texture": get_docker_texture, "elements": [container, cam_selector_pane] }
 
 def get_docker_texture(gui: Gui, state):
-    # print('docker texture', state.counting_count)
-    # state.counting_count += 1
-    if state.counting_thresh_publish_buffer is not None and time.time() - state.counting_thresh_publish_time > 3:
-        print('sending', state.counting_thresh_publish_buffer)
-        writer = echolib.MessageWriter()
-        writer.writeFloat(state.counting_thresh_publish_buffer)
-        state.counting_publisher_threshold.send(writer)
-        state.counting_thresh_publish_buffer = None
-        state.counting_thresh_publish_time = time.time()
-
     echolib_handler = state.echolib_handler
-
+    
     if not echolib_handler.docker_channel_ready:
         return None
     
     if state.demo_start:
         state.detection = 1
-        state.echolib_handler.append_command((state.echolib_handler.docker_channel_out, Command.ENABLE))
+        echolib_handler.append_command((echolib_handler.docker_channel_out, Command.ENABLE))
         state.demo_start = False
     
+    # return np.zeros((300, 400))
     image = echolib_handler.get_image()
     if image is None: return None
     # Watch out: if you're trying to increase responsiveness, image.copy() seems to cause some trouble
@@ -203,14 +179,11 @@ def get_docker_texture(gui: Gui, state):
     if state.counting_old_length != len(bboxes):
         if len(bboxes) > 0:
             bboxes_abs = np.array(bboxes) * np.array([width, height])
-            bboxes_view = np.array(bboxes_abs
-                                .astype(np.float32)
-                                .reshape((-1,4))
-                                .view(np.uint8), dtype=np.uint8)
+            bboxes_view = np.array(bboxes_abs.astype(np.float32).reshape((-1,4)))
         else:
-            bboxes_view = np.array([[0,0,0,0]], dtype=np.uint8)                    
+            bboxes_view = np.array([[0,0,0,0]], dtype=np.float32)                    
 
-        state.counting_publisher.send(Frame(image=bboxes_view))
+        echolib_handler.append_command((echolib_handler.demo_counting_bboxes, bboxes_view))
         state.counting_old_length = len(bboxes)
 
     # Its important we don't send this one yet, as it wouldn't get re-sent
@@ -219,9 +192,18 @@ def get_docker_texture(gui: Gui, state):
     for (x1,y1), (x2,y2) in bboxes:
         pt1 = int(x1 * width), int(y1 * height)
         pt2 = int(x2 * width), int(y2 * height)
-        cv2.rectangle(image, pt1, pt2, (255, 255, 0), 4)
+        cv2.rectangle(image, pt1, pt2, (255, 255, 0), width//500)
     
     return image
+
+def slider_threshold_on_select(slider: RangeSlider, state):
+    if state.active_demo is not None:
+        section = f"demos.{state.active_demo}"
+        if section not in state.config:
+            state.config[section] = {}
+        state.config[section]["threshold"] = str(slider.selected_value)
+    state.echolib_handler.append_command((state.echolib_handler.demo_counting_threshold, float(slider.selected_value)))
+
 
 def toggle_detection(button: Button, gui: Gui, state):
 
