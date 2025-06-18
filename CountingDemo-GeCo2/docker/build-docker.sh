@@ -1,0 +1,1 @@
+docker build -t counting-demo-geco2 .

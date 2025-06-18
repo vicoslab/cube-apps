@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <cfg>
     <demoId>CD-GeCo</demoId>
-    <dockerId>counting-geco2:cameras</dockerId>
+    <dockerId>counting-demo-geco2:latest</dockerId>
     <highlight-sl>Štetje objektov: GeCo2</highlight-sl>
     <highlight-en>Object counting: GeCo2</highlight-en>
     <vramMin>850</vramMin>
