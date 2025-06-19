@@ -3,3 +3,5 @@ __pycache__/
 *.mp4
 *.pth
 *.hdf5
+
+PolypDemo/docker/examples
