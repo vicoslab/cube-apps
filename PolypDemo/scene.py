@@ -1,7 +1,12 @@
 from opengl_gui.gui_components import *
+from gui_components import Language, TextFieldMultilingual
 
 import time
 
+i8n_button_detection = {
+    Language.EN: "Count polyps",
+    Language.SL: "Preštej polipe"
+}
 def get_scene(parameters):
     
     vicos_red  = [226.0/255, 61.0/255, 40.0/255.0, 0.75]
@@ -29,13 +34,14 @@ def get_scene(parameters):
         on_click = toggle_detection,
         id       = "demo_toggle_detection_button")
 
-    button_text = TextField(
+    button_text = TextFieldMultilingual(
         colour   = [1.0, 1.0, 1.0, 1.0],
         position = [0.25, 0.65,],
         text_scale = 0.5,
         aspect_ratio = parameters.aspect, 
-        id       = "demo_toggle_text")
-    button_text.set_text(text = "Preštej polipe", font = parameters.font)
+        id       = "demo_toggle_text",
+        language_callback = lambda field, lang: field.set_text(font = parameters.font, text = i8n_button_detection[lang]).center_x())
+    button_text.set_text(text = i8n_button_detection[parameters.state.language], font = parameters.font)
     button_text.center_x()
     button_text.center_y()
 

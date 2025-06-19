@@ -1,6 +1,10 @@
 from opengl_gui.gui_components import *
-from gui_components import Colours
+from gui_components import Colours, Language, TextFieldMultilingual
 
+i8n_button_detect = {
+    Language.EN: "Enable detection",
+    Language.SL: "Vključi detekcijo"
+}
 def get_scene(parameters):
     
     parameters.state.traffic_detection = 1
@@ -42,14 +46,15 @@ def get_scene(parameters):
         on_click = toggle_detection,
         id       = "demo_traffic_toggle_button")
 
-    button_text = TextField(
+    button_text = TextFieldMultilingual(
         colour   = [1.0, 1.0, 1.0, 1.0],
         position = [0.25, 0.65,],
         text_scale = 0.5,
         aspect_ratio = parameters.aspect, 
-        id = "demo_traffic_text")
+        id = "demo_traffic_text",
+        language_callback = lambda field, lang: field.set_text(font = parameters.font, text = i8n_button_detect[lang]).center_x())
 
-    button_text.set_text(font = parameters.font, text = "Vključi detekcijo")
+    button_text.set_text(font = parameters.font, text = i8n_button_detect[parameters.state.language])
     button_text.center_x()
     button_text.center_y()
 

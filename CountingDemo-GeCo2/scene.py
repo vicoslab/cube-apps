@@ -1,5 +1,5 @@
 from opengl_gui.gui_components import *
-from gui_components import SettableRangeSlider, Colours, TouchContainer
+from gui_components import SettableRangeSlider, Colours, TouchContainer, Language, TextFieldMultilingual
 
 class Command:
     DISABLE = 0
@@ -9,6 +9,26 @@ class Command:
     CAMERA_STREAM_KINECT_AZURE = 11
     CAMERA_STREAM_AXIS_PTZ = 12
 
+i8n_button_detect = {
+    Language.EN: "Toggle detection",
+    Language.SL: "Vključi detekcijo"
+}
+i8n_button_clear = {
+    Language.EN: "Clear",
+    Language.SL: "Počisti"
+}
+i8n_camera_default = {
+    Language.EN: "Main camera",
+    Language.SL: "Glavna kamera"
+}
+i8n_camera_kinect = {
+    Language.EN: "Kinect Azure",
+    Language.SL: "Kinect Azure"
+}
+i8n_camera_ptz = {
+    Language.EN: "Axis PTZ",
+    Language.SL: "Axis PTZ"
+}
 def get_scene(parameters):
 
     state = parameters.state
@@ -31,14 +51,15 @@ def get_scene(parameters):
         on_click = toggle_detection,
         id       = "demo_count_button")
 
-    button_text = TextField(
+    button_text = TextFieldMultilingual(
         colour   = [1.0, 1.0, 1.0, 1.0],
         position = [0.25, 0.65,],
         text_scale = 0.5,
-        aspect_ratio = parameters.aspect, 
-        id = "demo_count_text")
+        aspect_ratio = parameters.aspect,
+        id = "demo_count_text",
+        language_callback = lambda field, lang: field.set_text(font = parameters.font, text = i8n_button_detect[lang]).center_x())
 
-    button_text.set_text(font = parameters.font, text = "Vključi detekcijo")
+    button_text.set_text(font = parameters.font, text = i8n_button_detect[parameters.state.language])
     button_text.center_x()
     button_text.center_y()
 
@@ -93,14 +114,15 @@ def get_scene(parameters):
     button_exemplars.depends_on(container)
     slider_threshold.depends_on(container)
 
-    button_exemplars_text = TextField(
+    button_exemplars_text = TextFieldMultilingual(
         colour   = [1.0, 1.0, 1.0, 1.0],
         position = [0.25, 0.65,],
         text_scale = 0.5,
         aspect_ratio = parameters.aspect, 
-        id = "demo_exemplars_text")
+        id = "demo_exemplars_text",
+        language_callback = lambda field, lang: field.set_text(font = parameters.font, text = i8n_button_clear[lang]).center_x())
 
-    button_exemplars_text.set_text(font = parameters.font, text = "Počisti")
+    button_exemplars_text.set_text(font = parameters.font, text = i8n_button_clear[parameters.state.language])
     button_exemplars_text.center_x()
     button_exemplars_text.center_y()
 
@@ -134,14 +156,15 @@ def get_scene(parameters):
             on_click = callback,
             id       = "demo_counting_cam_{}".format(id))
 
-        cam_selector_text = TextField(
+        cam_selector_text = TextFieldMultilingual(
             colour   = [1.0, 1.0, 1.0, 1.0],
             position = [0.25, 0.5,],
             text_scale = 0.5,
             aspect_ratio = parameters.aspect,
-            id = "demo_counting_cam_{}_text".format(id))
+            id = "demo_counting_cam_{}_text".format(id),
+            language_callback = lambda field, lang: field.set_text(font = parameters.font, text = text[lang]).center_x())
 
-        cam_selector_text.set_text(font = parameters.font, text = text)
+        cam_selector_text.set_text(font = parameters.font, text = text[parameters.state.language])
         cam_selector_text.center_x()
         cam_selector_text.center_y()
 
@@ -151,9 +174,9 @@ def get_scene(parameters):
 
         return cam_selector
 
-    add_camera_select_button(cam_selector_pane, 0, get_switch_handler(Command.CAMERA_STREAM_DEFAULT), "Glavna kamera", enabled=True)
-    add_camera_select_button(cam_selector_pane, 1, get_switch_handler(Command.CAMERA_STREAM_KINECT_AZURE), "Kinect Azure", enabled=False)
-    add_camera_select_button(cam_selector_pane, 2, get_switch_handler(Command.CAMERA_STREAM_AXIS_PTZ), "Axis PTZ", enabled=False)
+    add_camera_select_button(cam_selector_pane, 0, get_switch_handler(Command.CAMERA_STREAM_DEFAULT), i8n_camera_default, enabled=True)
+    add_camera_select_button(cam_selector_pane, 1, get_switch_handler(Command.CAMERA_STREAM_KINECT_AZURE), i8n_camera_kinect, enabled=False)
+    add_camera_select_button(cam_selector_pane, 2, get_switch_handler(Command.CAMERA_STREAM_AXIS_PTZ), i8n_camera_ptz, enabled=False)
 
     return { "get_docker_texture": get_docker_texture, "elements": [container, cam_selector_pane] }
 
