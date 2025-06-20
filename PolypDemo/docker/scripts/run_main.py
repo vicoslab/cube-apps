@@ -17,9 +17,9 @@ cv2.ocl.setUseOpenCL(False)
 #RESIZE_RES = (2970, 2100)
 RESIZE_RES = (2080, 1470)
 
-DET_THICKNESS = 5
-FONT_THICKNESS = 4
-FONT_SCALE = 5
+DET_THICKNESS = 3
+FONT_THICKNESS = 2
+FONT_SCALE = 2
 FONT_COLOR = (255, 204, 153)
 #FONT_COLOR = (0, 255, 0) 
 
@@ -334,7 +334,7 @@ class PModel:
 
             final = mask_full3 * green + (1 - mask_full3) * image_full
 
-            cv2.putText(final, "Stevilo detektiranih polipov je {}".format(len(tBoxes)), (300, image_full.shape[0]-300), fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=FONT_SCALE, color=FONT_COLOR, thickness=FONT_THICKNESS)
+            cv2.putText(final, "Stevilo detektiranih polipov je {}".format(len(tBoxes)), (150, image_full.shape[0]-200), fontFace=cv2.FONT_HERSHEY_TRIPLEX, fontScale=FONT_SCALE, color=FONT_COLOR, thickness=FONT_THICKNESS)
 
             return cv2.cvtColor(final, cv2.COLOR_BGR2RGB)
 

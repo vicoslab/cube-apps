@@ -26,11 +26,12 @@ CROP_PIXEL = 5              # ignore 5px border when object is cropped
 MIN_BOARD_AREA = 200*200    # object should be at least 200x200 px in area
 
 THRESHOLD = 0.50
-TEXT_THICKNES = 3
+TEXT_THICKNES = 2
+CONTOUR_THICKNESS = 10
 
-FONT_SCALE = 2
-LABEL_OFFSET_X = -100
-LABEL_OFFSET_Y = -20
+FONT_SCALE = 1.3
+LABEL_OFFSET_X = -40
+LABEL_OFFSET_Y = -35
 LABEL_OPACITY = 0.65
 
 imagenet_mean = np.array([0.485, 0.456, 0.406])
@@ -208,11 +209,11 @@ class SegDecNetModel:
                 overlay = np.zeros_like(drawn_contours)
                 if image_score < THRESHOLD:
                     c = [0, 255, 0]
-                    cv2.drawContours(overlay, contours, 0, c, 20)
+                    cv2.drawContours(overlay, contours, 0, c, CONTOUR_THICKNESS)
                     cv2.putText(overlay, f"OK ({image_score * 100:.1f})", (tx+LABEL_OFFSET_X, ty+LABEL_OFFSET_Y), cv2.FONT_HERSHEY_TRIPLEX, FONT_SCALE, c, TEXT_THICKNES)
                 else:
                     c = [0, 0, 255]
-                    cv2.drawContours(overlay, contours, 0, c, 20)
+                    cv2.drawContours(overlay, contours, 0, c, CONTOUR_THICKNESS)
                     cv2.putText(overlay, f"X ({image_score * 100:.1f})", (tx+LABEL_OFFSET_X, ty+LABEL_OFFSET_Y), cv2.FONT_HERSHEY_TRIPLEX, FONT_SCALE, c, TEXT_THICKNES)
                 
                 mask = overlay.astype(bool)

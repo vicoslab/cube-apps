@@ -185,8 +185,8 @@ class PModel:
 
                 print(f"Predicted: {predicted}")
                 
-                drawn_contours = cv2.drawContours(drawn_contours, contours, 0, [0, 255, 0], 20)
-                drawn_contours = cv2.putText(drawn_contours, str(predicted), (tx, ty), cv2.FONT_HERSHEY_TRIPLEX, 5, (0, 255, 0), 20)
+                drawn_contours = cv2.drawContours(drawn_contours, contours, 0, [0, 255, 0], 10)
+                drawn_contours = cv2.putText(drawn_contours, str(predicted), (tx, ty), cv2.FONT_HERSHEY_TRIPLEX, 3, (0, 255, 0), 10)
                 
                 drawn_true = True
 
