@@ -40,8 +40,10 @@ def get_scene(parameters):
     state.counting_drag_stopped_time = None
     state.counting_exemplars = []
     state.counting_old_length = 0
-    state.counting_threshold = 0.5 # 0.4 - 0.6 is reasonable (1 == max detection on image)
+    state.counting_threshold = 0.5
     state.counting_count = 0
+    if not hasattr(state, "counting_camera_selected"):
+        state.counting_camera_selected = Command.CAMERA_STREAM_DEFAULT
 
     button_scale = 1.4
     button_detection = Button(
@@ -144,16 +146,17 @@ def get_scene(parameters):
             for b in cam_selector_pane.dependent_components:
                 b.set_colour(Colours.VICOS_RED)
 
+            state.counting_camera_selected = camera_stream
             button.set_colour(Colours.VICOS_GRAY)
         return switch_camera
 
-    def add_camera_select_button(button_pane, id, callback, text, enabled=True):
+    def add_camera_select_button(button_pane, id, stream_id, text):
         cam_selector = Button(
             position = [0.02, 0],
             scale    = [0.08*cam_selector_scale, 0.03*cam_selector_scale],
             offset   = [0, id*0.06*cam_selector_scale],
-            colour   = Colours.VICOS_GRAY_NON_TRANSPARENT if enabled else Colours.VICOS_RED,
-            on_click = callback,
+            colour   = Colours.VICOS_GRAY_NON_TRANSPARENT if state.counting_camera_selected == stream_id else Colours.VICOS_RED,
+            on_click = get_switch_handler(stream_id),
             id       = "demo_counting_cam_{}".format(id))
 
         cam_selector_text = TextFieldMultilingual(
@@ -174,9 +177,9 @@ def get_scene(parameters):
 
         return cam_selector
 
-    add_camera_select_button(cam_selector_pane, 0, get_switch_handler(Command.CAMERA_STREAM_DEFAULT), i8n_camera_default, enabled=True)
-    add_camera_select_button(cam_selector_pane, 1, get_switch_handler(Command.CAMERA_STREAM_KINECT_AZURE), i8n_camera_kinect, enabled=False)
-    add_camera_select_button(cam_selector_pane, 2, get_switch_handler(Command.CAMERA_STREAM_AXIS_PTZ), i8n_camera_ptz, enabled=False)
+    add_camera_select_button(cam_selector_pane, 0, Command.CAMERA_STREAM_DEFAULT, i8n_camera_default)
+    add_camera_select_button(cam_selector_pane, 1, Command.CAMERA_STREAM_KINECT_AZURE, i8n_camera_kinect)
+    add_camera_select_button(cam_selector_pane, 2, Command.CAMERA_STREAM_AXIS_PTZ, i8n_camera_ptz)
 
     return { "get_docker_texture": get_docker_texture, "elements": [container, cam_selector_pane] }
 
@@ -194,7 +197,6 @@ def get_docker_texture(gui: Gui, state):
     # return np.zeros((300, 400))
     image = echolib_handler.get_image()
     if image is None: return None
-    # Watch out: if you're trying to increase responsiveness, image.copy() seems to cause some trouble
     
     height, width, _ = image.shape
     bboxes = state.counting_exemplars.copy()

@@ -46,6 +46,7 @@ class EcholibWrapper:
 
         self.frame_in    = None
         self.frame_in_new = False
+        self.aspect_ratio = 2012/1518
 
         self.frame_out    = None
         self.frame_out_new = False 
@@ -98,6 +99,16 @@ class EcholibWrapper:
 
                 frame = self.frame_in
                 self.frame_in_new = False
+
+                expected_aspect_ratio = self.aspect_ratio
+                img_aspect_ratio = frame.shape[1] / frame.shape[0]
+
+                if expected_aspect_ratio > img_aspect_ratio:
+                    crop = np.abs(int((frame.shape[1] / expected_aspect_ratio - frame.shape[0]) / 2))
+                    frame = np.array(frame[crop:-crop,:], dtype=np.uint8)
+                elif expected_aspect_ratio < img_aspect_ratio:
+                    crop = np.abs(int((frame.shape[0] * expected_aspect_ratio - frame.shape[1]) / 2))
+                    frame = np.array(frame[:,crop:-crop], dtype=np.uint8)
             
                 bboxes = self.bounding_boxes_data.view(np.float32)
                 if self.enabled and (bboxes.shape[0] > 1 or np.abs(bboxes).sum() > 0):
