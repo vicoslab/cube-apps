@@ -3,6 +3,7 @@ import numpy as np
 
 import echolib
 from echolib.camera import Frame, FramePublisher, FrameSubscriber
+from echolib.array import TensorSubscriber
 
 from threading import Thread
 
@@ -39,7 +40,7 @@ class EcholibWrapper:
         
         self.threshold = echolib.Subscriber(self.client, "counting_threshold", "float", self._threshold_callback)
         self.threshold_data = 0.75
-        self.bounding_boxes = echolib.Subscriber(self.client, "counting_bboxes", "SharedTensor", self._bboxes_callback)
+        self.bounding_boxes = TensorSubscriber(self.client, "counting_bboxes", self._bboxes_callback)
         self.bounding_boxes_data = np.array([[0,0,0,0]], dtype=np.float32)
 
         self.detection_method = method(args)
@@ -86,8 +87,7 @@ class EcholibWrapper:
         self.threshold_data = msg
         
     def _bboxes_callback(self, message):
-        reader = echolib.MessageReader(message)
-        self.bounding_boxes_data = echolib._echo.readTensor(reader)
+        self.bounding_boxes_data = message
 
     def process(self):
         
