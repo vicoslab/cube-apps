@@ -96,7 +96,7 @@ class EcholibWrapper:
 
         while self.loop.wait(1):
 
-            print("In loop...")
+            #print("In loop...")
 
             if self.frame_out_new:
                 
