@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<cfg>
+    <demoId>NYCD</demoId>
+    <dockerId>niryo-cloth-demo:latest</dockerId>
+    <highlight-sl>Prijemanje tekstila</highlight-sl>
+    <highlight-en>Cloth gripping</highlight-en>
+    <vramMin>600</vramMin>
+    <vramMax>1500</vramMax>
+    <!-- Uncomment this if you want to always delete container when deselecting. 
+        This is useful when you want to rebuild its docker image and 
+        test it out without restarting the whole UI -->
+    <!-- <nopause/> -->
+    <video>krpe.mp4</video>
+    <icon>icon.svg</icon>
+</cfg>
