@@ -5,3 +5,4 @@ __pycache__/
 *.hdf5
 
 PolypDemo/docker/examples
+BoardDemo/docker/scripts/out
