@@ -10,14 +10,14 @@ ENV MODEL_DIR /opt/tsr-detectron-model
 
 WORKDIR $MODEL_DIR/resnet101
 
-ADD http://box.vicos.si/skokec/villard/tsr-tracker/detectron-ResNet101.tar.gz $MODEL_DIR/resnet101
+ADD http://data.vicos.si/skokec/villard/tsr-tracker/detectron-ResNet101.tar.gz $MODEL_DIR/resnet101
 
 RUN tar -zxvf detectron-ResNet101.tar.gz && ln -s ResNet101_FPN_840px_ohem_weighted_cls_even_rois.yaml config.yaml
 RUN rm -rf $MODEL_DIR/detectron-ResNet101.tar.gz
 
 WORKDIR $MODEL_DIR/resnet50
 
-ADD http://box.vicos.si/skokec/villard/tsr-tracker/detectron-ResNet50.tar.gz $MODEL_DIR/resnet50
+ADD http://data.vicos.si/skokec/villard/tsr-tracker/detectron-ResNet50.tar.gz $MODEL_DIR/resnet50
 
 RUN tar -zxvf detectron-ResNet50.tar.gz && ln -s ResNet50_FPN_840px_ohem_weighted_cls_even_rois.yaml config.yaml
 RUN rm -rf $MODEL_DIR/detectron-ResNet50.tar.gz
