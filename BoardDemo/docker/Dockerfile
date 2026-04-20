@@ -34,7 +34,7 @@ RUN pip3 install future
 COPY scripts ${MODEL_DIR}
 
 ARG MODEL_NAME="m1.pth"
-#RUN wget https://box.vicos.si/vicos-cube/board/docker/models/${MODEL_NAME} ${MODEL_DIR}/model.pth
+#RUN wget https://data.vicos.si/vicos-cube/board/docker/models/${MODEL_NAME} ${MODEL_DIR}/model.pth
 
 RUN chmod +x ${MODEL_DIR}/run_main.py
 

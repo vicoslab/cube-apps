@@ -34,7 +34,7 @@ COPY scripts ${MODEL_DIR}
 RUN chmod +x ${MODEL_DIR}/run_main.py
 
 ARG MODEL_NAME="poco_model.hdf5"
-#RUN wget https://box.vicos.si/vicos-cube/polyp/docker/models/${MODEL_NAME} ${MODEL_DIR}/model.hdf5
+#RUN wget https://data.vicos.si/vicos-cube/polyp/docker/models/${MODEL_NAME} ${MODEL_DIR}/model.hdf5
 
 # define entry-point and default arguments
 ENTRYPOINT ["/opt/run_main.py", "--model", "/opt/poco_model.hdf5"]
