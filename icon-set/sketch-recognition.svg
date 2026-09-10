@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Razpoznava skic</title>
+  <g fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M34 10H14a4 4 0 0 0-4 4v36a4 4 0 0 0 4 4h30a4 4 0 0 0 4-4v-9M17 44l7-10 7 7 5-5"/><circle cx="22" cy="24" r="4"/><path d="m33 31 15-19a3.5 3.5 0 0 1 6 4L39 35l-9 4 3-8Zm12-15 6 5"/>
+  </g>
+</svg>

@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <title>Zaznavanje vogalov</title>
+  <g fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+    <path d="m16 18 25-5 10 28-26 10-9-33Zm6 7 7 19 16-6"/><circle cx="16" cy="18" r="4"/><circle cx="41" cy="13" r="4"/><circle cx="51" cy="41" r="4"/><circle cx="25" cy="51" r="4"/>
+  </g>
+</svg>

@@ -1,0 +1,52 @@
+[
+  {
+    "id": "cloth-gripping",
+    "label": "Prijemanje tekstila",
+    "file": "cloth-gripping.svg"
+  },
+  {
+    "id": "wood-classification",
+    "label": "Razpoznava desk",
+    "file": "wood-classification.svg"
+  },
+  {
+    "id": "sketch-recognition",
+    "label": "Razpoznava skic",
+    "file": "sketch-recognition.svg"
+  },
+  {
+    "id": "road-signs",
+    "label": "Razpoznava znakov",
+    "file": "road-signs.svg"
+  },
+  {
+    "id": "object-tracking",
+    "label": "Sledenje objektov",
+    "file": "object-tracking.svg"
+  },
+  {
+    "id": "defect-detection",
+    "label": "Zaznavanje napak",
+    "file": "defect-detection.svg"
+  },
+  {
+    "id": "object-counting",
+    "label": "Štetje objektov",
+    "file": "object-counting.svg"
+  },
+  {
+    "id": "marine-polyps",
+    "label": "Štetje polipov",
+    "file": "marine-polyps.svg"
+  },
+  {
+    "id": "cloth-corners",
+    "label": "Zaznavanje vogalov",
+    "file": "cloth-corners.svg"
+  },
+  {
+    "id": "default",
+    "label": "Demonstracija",
+    "file": "default.svg"
+  }
+]

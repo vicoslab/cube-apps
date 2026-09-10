@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
-  <title>Demonstracija</title>
+  <title>Sledenje objektov</title>
   <g fill="none" stroke="#ffffff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="m32 9 22 13v22L32 56 10 44V22L32 9Zm0 26 22-13M32 35 10 22m22 13v21M21 16l22 13"/>
+    <path d="M29 13h-7v7m21-7h8v7m0 23v8h-8m-21-8v8h7"/><rect x="28" y="23" width="17" height="18" rx="3"/><path d="M9 23h10M6 32h13M9 41h10m5-9h4"/>
   </g>
 </svg>
